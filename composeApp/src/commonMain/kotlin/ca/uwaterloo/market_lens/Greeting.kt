@@ -1,0 +1,9 @@
+package ca.uwaterloo.market_lens
+
+class Greeting {
+    private val platform = getPlatform()
+
+    fun greet(): String {
+        return "Hello, ${platform.name}!"
+    }
+}
