@@ -1,0 +1,34 @@
+package ca.uwaterloo.market_lens.navigation
+
+import androidx.compose.runtime.Composable
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import ca.uwaterloo.market_lens.ui.ai_event.AIEventScreen
+import ca.uwaterloo.market_lens.ui.alerts.AlertsScreen
+import ca.uwaterloo.market_lens.ui.events.EventsScreen
+import ca.uwaterloo.market_lens.ui.login.LoginScreen
+import ca.uwaterloo.market_lens.ui.portfolio.PortfolioScreen
+import ca.uwaterloo.market_lens.ui.stock.StockScreen
+
+@Composable
+fun NavGraph() {
+    val navController = rememberNavController()
+
+    NavHost(
+        navController = navController,
+        startDestination = Routes.LOGIN
+    ) {
+        composable(Routes.LOGIN) { LoginScreen(navController) }
+        composable(Routes.PORTFOLIO) { PortfolioScreen() }
+        composable(Routes.ALERTS) { AlertsScreen() }
+        composable(Routes.STOCK) { StockScreen() }
+        composable(Routes.EVENTS) { EventsScreen() }
+        composable(Routes.AI) { AIEventScreen() }
+    }
+}
+
+@Composable
+fun AlertConfigScreen() {
+    TODO("Not yet implemented")
+}
