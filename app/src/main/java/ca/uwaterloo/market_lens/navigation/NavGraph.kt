@@ -27,8 +27,3 @@ fun NavGraph() {
         composable(Routes.AI) { AIEventScreen() }
     }
 }
-
-@Composable
-fun AlertConfigScreen() {
-    TODO("Not yet implemented")
-}
