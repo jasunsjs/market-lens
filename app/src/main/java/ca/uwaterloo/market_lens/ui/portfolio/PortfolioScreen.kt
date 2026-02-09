@@ -46,7 +46,7 @@ fun PortfolioScreen(
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        topBar = { PortfolioTopBar(navController) },
+        topBar = { PortfolioTopBar(navController, viewModel) },
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -98,9 +98,8 @@ fun PortfolioScreen(
                     StockCard(
                         stock = stock,
                         onDelete = { stockList.remove(stock) },
-                        onNavigate = { ticker ->
-                            {navController.navigate(Routes.STOCK)}
-                        }
+                        navController,
+                        viewModel
                     )
                 }
             }
@@ -111,7 +110,8 @@ fun PortfolioScreen(
 // -- PORTFOLIO PAGE TOP BAR --//
 @Composable
 fun PortfolioTopBar(
-    navController: NavController
+    navController: NavController,
+    viewModel: PortfolioViewModel
 ) {
     Row(
         modifier = Modifier
@@ -147,7 +147,9 @@ fun PortfolioTopBar(
         // simulate alerts
         Button(
             onClick = {
-                navController.navigate(Routes.ALERTS)
+                viewModel.navigateToAlertPage {
+                    navController.navigate(Routes.ALERTS)
+                }
             },
             colors = ButtonDefaults.buttonColors(
                 containerColor = MarketGreen,
@@ -264,7 +266,8 @@ fun AddStockSection(
 fun StockCard(
     stock: StockItemInfo,
     onDelete: () -> Unit,
-    onNavigate: (String) -> Unit
+    navController: NavController,
+    viewModel: PortfolioViewModel
 ) {
     Card(
         colors = CardDefaults.cardColors(
@@ -272,7 +275,11 @@ fun StockCard(
         ),
         shape = RoundedCornerShape(12.dp),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        modifier = Modifier.fillMaxWidth().clickable() { onNavigate(stock.ticker)}
+        modifier = Modifier.fillMaxWidth().clickable() {
+            viewModel.navigateToStockPage(stock) {
+                navController.navigate(Routes.STOCK)
+            }
+        }
     ) {
         Row(
             modifier = Modifier
