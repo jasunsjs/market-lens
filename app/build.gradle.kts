@@ -82,6 +82,9 @@ dependencies {
     implementation("io.ktor:ktor-client-okhttp:3.0.0")
     implementation("io.ktor:ktor-client-content-negotiation:3.0.0")
     implementation("io.ktor:ktor-serialization-kotlinx-json:3.0.0")
+    
+    // UI
+    implementation("androidx.compose.material:material-icons-extended:1.7.8")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
