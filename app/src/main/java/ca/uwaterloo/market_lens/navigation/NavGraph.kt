@@ -1,6 +1,7 @@
 package ca.uwaterloo.market_lens.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -20,7 +21,7 @@ fun NavGraph() {
         startDestination = Routes.LOGIN
     ) {
         composable(Routes.LOGIN) { LoginScreen(navController) }
-        composable(Routes.PORTFOLIO) { PortfolioScreen() }
+        composable(Routes.PORTFOLIO) { PortfolioScreen(navController) }
         composable(Routes.ALERTS) { AlertsScreen() }
         composable(Routes.STOCK) { StockScreen() }
         composable(Routes.EVENTS) { EventsScreen() }
