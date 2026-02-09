@@ -46,7 +46,7 @@ fun PortfolioScreen(
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        topBar = { PortfolioTopBar() },
+        topBar = { PortfolioTopBar(navController) },
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -110,7 +110,9 @@ fun PortfolioScreen(
 
 // -- PORTFOLIO PAGE TOP BAR --//
 @Composable
-fun PortfolioTopBar() {
+fun PortfolioTopBar(
+    navController: NavController
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -144,7 +146,9 @@ fun PortfolioTopBar() {
 
         // simulate alerts
         Button(
-            onClick = { /* Nav to Alert Page */ },
+            onClick = {
+                navController.navigate(Routes.ALERTS)
+            },
             colors = ButtonDefaults.buttonColors(
                 containerColor = MarketGreen,
                 contentColor = Color.Black
