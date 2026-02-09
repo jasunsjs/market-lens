@@ -2,6 +2,7 @@ package ca.uwaterloo.market_lens.ui.portfolio
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -96,7 +97,10 @@ fun PortfolioScreen(
                 items(stockList) { stock ->
                     StockCard(
                         stock = stock,
-                        onDelete = { stockList.remove(stock) }
+                        onDelete = { stockList.remove(stock) },
+                        onNavigate = { ticker ->
+                            {navController.navigate(Routes.STOCK)}
+                        }
                     )
                 }
             }
@@ -253,14 +257,18 @@ fun AddStockSection(
 
 // -- INDIVIDUAL STOCK CARDS --//
 @Composable
-fun StockCard(stock: StockItemInfo, onDelete: () -> Unit) {
+fun StockCard(
+    stock: StockItemInfo,
+    onDelete: () -> Unit,
+    onNavigate: (String) -> Unit
+) {
     Card(
         colors = CardDefaults.cardColors(
             containerColor = MarketCardBlack
         ),
         shape = RoundedCornerShape(12.dp),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth().clickable() { onNavigate(stock.ticker)}
     ) {
         Row(
             modifier = Modifier

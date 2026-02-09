@@ -10,4 +10,11 @@ class PortfolioViewModel : ViewModel() {
             onSuccess()
         }
     }
+    fun navigateToStockPage(
+        onSuccess: () -> Unit,
+        stockItemInfo: StockItemInfo) {
+        viewModelScope.launch {
+            onSuccess
+        }
+    }
 }
