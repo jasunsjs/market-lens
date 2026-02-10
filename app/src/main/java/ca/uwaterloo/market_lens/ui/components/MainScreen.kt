@@ -26,7 +26,7 @@ fun MainScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             if (showTopBar) {
-                TopBar()
+                TopBar(navController)
             }
         },
         bottomBar = {
