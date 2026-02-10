@@ -33,7 +33,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -53,63 +54,15 @@ import ca.uwaterloo.market_lens.ui.theme.*
 import java.util.Locale
 import kotlin.math.pow
 
-// hardcoded news items, can remove later
-data class NewsItem(
-    val title: String,
-    val source: String,
-    val time: String,
-    val description: String,
-    val sentiment: Sentiment
-)
-
-//determines color of sidebar
-enum class Sentiment {
-    POSITIVE, NEGATIVE, NEUTRAL
-}
-
 @Composable
 fun StockScreen(
     ticker: String,
     navController: NavController,
     viewModel: StockViewModel = viewModel()
 ) {
-    // placeholder news data
-    val newsItems = listOf(
-        NewsItem(
-            title = "AAPL Announces New Product Line",
-            time = "2 hours ago",
-            description = "Company reveals innovative solutions targeting enterprise customers, expected to drive Q4 revenue growth.",
-            source = "Bloomberg",
-            sentiment = Sentiment.POSITIVE
-        ),
-        NewsItem(
-            title = "Analyst Upgrades Price Target",
-            time = "5 hours ago",
-            description = "Major investment bank raises price target by 15% citing strong fundamentals and market position.",
-            source = "Reuters",
-            sentiment = Sentiment.POSITIVE
-        ),
-        NewsItem(
-            title = "Sector Faces Regulatory Scrutiny",
-            time = "1 day ago",
-            description = "New proposed regulations could impact operations, though long-term effects remain uncertain.",
-            source = "Financial Times",
-            sentiment = Sentiment.NEGATIVE
-        ),
-        NewsItem(
-            title = "Q3 Earnings Beat Expectations",
-            time = "3 days ago",
-            description = "Revenue exceeded analyst forecasts with strong performance across all business segments.",
-            source = "CNBC",
-            sentiment = Sentiment.POSITIVE
-        )
-    )
-
-    val chartData = remember {
-        listOf(150f, 155f, 152f, 158f, 165f, 162f, 170f, 175f, 172f, 180f,
-            150f, 100f, 110f, 60f, 50f, 100f, 150f, 155f, 152f, 158f,
-            180f, 200f, 190f, 195f, 210f, 220f, 200f, 240f, 220f)
-    }
+    val stockDetails by viewModel.stockDetails.collectAsState()
+    val metrics by viewModel.metrics.collectAsState()
+    val analysis by viewModel.analysis.collectAsState()
 
     LazyColumn(
         modifier = Modifier
@@ -147,11 +100,11 @@ fun StockScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
-                        Text(ticker, style = MaterialTheme.typography.headlineLarge)
+                        Text(stockDetails.ticker, style = MaterialTheme.typography.headlineLarge)
                         Text("Real-time Stock Analysis", style = MaterialTheme.typography.bodyLarge)
                     }
                     Column(horizontalAlignment = Alignment.End) {
-                        Text("$162.24", style = MaterialTheme.typography.headlineLarge)
+                        Text(stockDetails.price, style = MaterialTheme.typography.headlineLarge)
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 Icons.AutoMirrored.Filled.TrendingUp,
@@ -159,7 +112,7 @@ fun StockScreen(
                                 modifier = Modifier.size(16.dp)
                             )
                             Text(
-                                "+3.02 (+1.90%)",
+                                "${stockDetails.priceChange} ${stockDetails.priceChangePercent}",
                                 color = MarketGreen,
                                 style = MaterialTheme.typography.bodyLarge
                             )
@@ -174,24 +127,24 @@ fun StockScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                MetricCard("Market Cap", "$380.5B", modifier = Modifier.weight(1f))
-                MetricCard("Volume", "20.2M", modifier = Modifier.weight(1f))
-                MetricCard("P/E Ratio", "31.4", modifier = Modifier.weight(1f))
+                metrics.forEach {
+                    MetricCard(it.label, it.value, modifier = Modifier.weight(1f))
+                }
             }
         }
         // Chart and graphs
         item {
-            PriceChart(chartData)
+            PriceChart(chartData = viewModel.chartData, dates = viewModel.dates)
         }
         //news and events
         item {
             Text("Recent News and Events", style = MaterialTheme.typography.titleLarge)
         }
         item {
-            NewsCard(newsItems = newsItems)
+            NewsCard(newsItems = viewModel.newsItems)
         }
         item {
-            AnalysisCard(ticker = ticker)
+            AnalysisCard(ticker = ticker, analysis = analysis)
         }
         item { Spacer(Modifier.height(40.dp)) }
     }
@@ -222,7 +175,10 @@ fun MetricCard(
 }
 
 @Composable
-fun PriceChart(chartData: List<Float>) {
+fun PriceChart(
+    chartData: List<Float>,
+    dates: List<String>
+) {
     Card(
         colors = CardDefaults.cardColors(containerColor = MarketCardBlack),
         modifier = Modifier.fillMaxWidth()
@@ -279,7 +235,7 @@ fun PriceChart(chartData: List<Float>) {
                     }
 
                     //draw x axis
-                    val dateLabels = listOf("1/13", "1/19", "1/26", "2/1", "2/9")
+                    val dateLabels = dates
                     paint.textAlign = Paint.Align.CENTER
                     dateLabels.forEachIndexed { index, date ->
                         val xPos = yAxisWidth + (index * (chartAreaWidth / (dateLabels.size - 1)))
@@ -434,7 +390,7 @@ fun NewsItemRow(news: NewsItem) {
 }
 
 @Composable
-fun AnalysisCard(ticker: String) {
+fun AnalysisCard(ticker: String, analysis: Analysis) {
     Card(
         colors = CardDefaults.cardColors(
             containerColor = MarketCardGreen
@@ -453,9 +409,7 @@ fun AnalysisCard(ticker: String) {
                 color = TextWhite
             )
             Text(
-                text = "Based on recent market activity, $ticker is showing positive" +
-                        " momentum with a 0.02% change. Technical indicators suggest" +
-                        " bullish sentiment, while fundamental analysis reveals strong market positioning. Analysts maintain a generally favorable outlook with an average price target of $139.70.",
+                text = analysis.summary.format(ticker),
                 style = MaterialTheme.typography.bodyLarge,
                 lineHeight = 24.sp,
                 color = TextWhite.copy(alpha = 0.9f)
@@ -471,7 +425,10 @@ fun AnalysisCard(ticker: String) {
                     border = BorderStroke(1.dp, MarketGreen.copy(alpha = 0.3f))
                 ) {
                     Text(
-                        text = "Bullish Signal",
+                        text = when (analysis.signal) {
+                            MarketSignal.BULLISH -> "Bullish Signal"
+                            MarketSignal.BEARISH -> "Bearish Signal"
+                        },
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                         style = MaterialTheme.typography.labelLarge,
                         color = MarketGreen
@@ -483,7 +440,7 @@ fun AnalysisCard(ticker: String) {
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     Text(
-                        text = "Confidence: 79%",
+                        text = "Confidence: ${String.format(Locale.ENGLISH, "%.0f%%", analysis.confidence * 100)}",
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                         style = MaterialTheme.typography.labelLarge,
                         color = TextMuted
