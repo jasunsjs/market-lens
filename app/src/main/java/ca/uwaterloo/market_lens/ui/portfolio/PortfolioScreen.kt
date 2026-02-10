@@ -1,5 +1,7 @@
 package ca.uwaterloo.market_lens.ui.portfolio
 
+
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -9,7 +11,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ShowChart
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -23,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import ca.uwaterloo.market_lens.navigation.Routes
 import ca.uwaterloo.market_lens.ui.theme.*
 
 // class holding stock info for each UI element
@@ -35,16 +40,14 @@ data class StockItemInfo(
 @Composable
 fun PortfolioScreen(
     navController: NavController,
-    viewModel: PortfolioViewModel
+    viewModel: PortfolioViewModel = viewModel()
 ) {
     var tickerInput by remember { mutableStateOf("") }
     var weightInput by remember { mutableStateOf("") }
-<<<<<<< HEAD
-
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = { PortfolioTopBar(navController, viewModel) },
-    ) { paddingValues ->
+        ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -72,45 +75,13 @@ fun PortfolioScreen(
                 onWeightChange = { weightInput = it },
                 onAddClick = {
                     if (tickerInput.isNotEmpty()) {
-                        val stockToAdd = StockItemInfo(
-=======
-    val stockList = remember { mutableStateListOf<StockItemInfo>() }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp)
-            .padding(top = 24.dp)
-    ) {
-        // page header
-        Text(
-            text = "Portfolio",
-            style = MaterialTheme.typography.headlineLarge,
-            color = TextWhite
-        )
-        Text(
-            text = "Manage your tracked stocks",
-            style = MaterialTheme.typography.bodyLarge,
-            color = TextMuted,
-            modifier = Modifier.padding(top = 4.dp, bottom = 24.dp)
-        )
-
-        AddStockSection(
-            ticker = tickerInput,
-            weight = weightInput,
-            onTickerChange = { tickerInput = it },
-            onWeightChange = { weightInput = it },
-            onAddClick = {
-                if (tickerInput.isNotEmpty()) {
-                    stockList.add(
-                        StockItemInfo(
->>>>>>> main
-                            id = System.currentTimeMillis().toString(),
-                            ticker = tickerInput.uppercase(),
-                            weight = weightInput.ifEmpty { "0" }
+                        viewModel.addStock(
+                            StockItemInfo(
+                                id = System.currentTimeMillis().toString(),
+                                ticker = tickerInput.uppercase(),
+                                weight = weightInput.ifEmpty { "0" }
+                            )
                         )
-<<<<<<< HEAD
-                        viewModel.addStock(stockToAdd)
                         tickerInput = ""
                         weightInput = ""
                     }
@@ -129,16 +100,13 @@ fun PortfolioScreen(
                         onDelete = { viewModel.removeStock(stock) },
                         navController,
                         viewModel
-=======
->>>>>>> main
                     )
-                    tickerInput = ""
-                    weightInput = ""
                 }
             }
-        )
+        }
+    }
+}
 
-<<<<<<< HEAD
 // -- PORTFOLIO PAGE TOP BAR --//
 @Composable
 fun PortfolioTopBar(
@@ -202,20 +170,6 @@ fun PortfolioTopBar(
                 fontWeight = FontWeight.Bold,
                 color = Color.Black
             )
-=======
-        //stock list
-        Spacer(modifier = Modifier.height(24.dp))
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.weight(1f) // Takes up remaining space
-        ) {
-            items(stockList) { stock ->
-                StockCard(
-                    stock = stock,
-                    onDelete = { stockList.remove(stock) }
-                )
-            }
->>>>>>> main
         }
     }
 }
