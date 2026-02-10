@@ -63,7 +63,7 @@ fun LoginScreen(
         ) {
             // --- HEADER ---
             Text(
-                text = "Market Lens",
+                text = "MarketLens",
                 style = MaterialTheme.typography.headlineLarge,
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Bold
