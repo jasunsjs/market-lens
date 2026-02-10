@@ -56,7 +56,9 @@ fun TopBar() {
 
         // simulate alerts
         Button(
-            onClick = { /* Nav to Alert Page */ },
+            onClick = {
+
+            },
             colors = ButtonDefaults.buttonColors(
                 containerColor = MarketGreen,
                 contentColor = Color.Black

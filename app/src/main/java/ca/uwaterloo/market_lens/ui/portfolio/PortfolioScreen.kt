@@ -46,7 +46,6 @@ fun PortfolioScreen(
     var weightInput by remember { mutableStateOf("") }
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        topBar = { PortfolioTopBar(navController, viewModel) },
         ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -67,7 +66,6 @@ fun PortfolioScreen(
                 color = TextMuted,
                 modifier = Modifier.padding(top = 4.dp, bottom = 24.dp)
             )
-
             AddStockSection(
                 ticker = tickerInput,
                 weight = weightInput,
@@ -87,7 +85,6 @@ fun PortfolioScreen(
                     }
                 }
             )
-
             //stock list
             Spacer(modifier = Modifier.height(24.dp))
             LazyColumn(
@@ -103,73 +100,6 @@ fun PortfolioScreen(
                     )
                 }
             }
-        }
-    }
-}
-
-// -- PORTFOLIO PAGE TOP BAR --//
-@Composable
-fun PortfolioTopBar(
-    navController: NavController,
-    viewModel: PortfolioViewModel
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .background(MarketGreen, RoundedCornerShape(8.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ShowChart,
-                    contentDescription = null,
-                    tint = Color.Black,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(
-                text = "Stock Analysis",
-                style = MaterialTheme.typography.titleLarge,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextWhite
-            )
-        }
-
-        // simulate alerts
-        Button(
-            onClick = {
-                viewModel.navigateToAlertPage {
-                    navController.navigate(Routes.ALERTS)
-                }
-            },
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MarketGreen,
-                contentColor = Color.Black
-            ),
-            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-            shape = RoundedCornerShape(8.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Bolt,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp)
-            )
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(
-                text = "Simulate Alert",
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
-            )
         }
     }
 }

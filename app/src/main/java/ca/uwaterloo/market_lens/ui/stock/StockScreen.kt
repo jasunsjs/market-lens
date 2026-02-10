@@ -18,7 +18,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import ca.uwaterloo.market_lens.navigation.Routes
-import ca.uwaterloo.market_lens.ui.portfolio.PortfolioTopBar
 import ca.uwaterloo.market_lens.ui.theme.*
 
 @Composable
@@ -29,7 +28,6 @@ fun StockScreen(
 ) {
     Scaffold(
         containerColor = MarketBlack,
-        topBar = { PortfolioTopBar(navController = navController, viewModel()) }
     ) { padding ->
         LazyColumn(
             modifier = Modifier

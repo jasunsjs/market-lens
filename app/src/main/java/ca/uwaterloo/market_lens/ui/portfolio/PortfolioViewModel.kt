@@ -16,11 +16,7 @@ class PortfolioViewModel : ViewModel() {
     fun removeStock(stock: StockItemInfo) {
         stockList.remove(stock)
     }
-    fun navigateToAlertPage(onSuccess: () -> Unit) {
-        viewModelScope.launch {
-            onSuccess()
-        }
-    }
+
     fun navigateToStockPage(
         stockItemInfo: StockItemInfo,
         onSuccess: () -> Unit) {
