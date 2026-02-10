@@ -18,18 +18,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import ca.uwaterloo.market_lens.ui.theme.*
 
-data class TimelineEvent(
-    val id: String,
-    val ticker: String,
-    val percentChange: Double,
-    val description: String,
-    val timestamp: String
-)
-
 @Composable
-fun EventsScreen(viewModel: EventsViewModel = viewModel()) {
+fun EventsScreen(navController: NavController, viewModel: EventsViewModel = viewModel()) {
     val events = viewModel.events
 
     Column(
@@ -53,20 +46,25 @@ fun EventsScreen(viewModel: EventsViewModel = viewModel()) {
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(events) { event ->
-                EventCard(event = event)
+            items(events.values.toList()) { event ->
+                EventCard(
+                    event = event,
+                    onClick = { navController.navigate("event_overview/${event.id}") }
+                )
             }
         }
     }
 }
 
 @Composable
-private fun EventCard(event: TimelineEvent) {
+private fun EventCard(event: EventData, onClick: () -> Unit) {
     val isNegative = event.percentChange < 0
     val trendColor = if (isNegative) MarketRed else MarketGreen
-    val trendIcon = if (isNegative) Icons.AutoMirrored.Filled.TrendingDown else Icons.AutoMirrored.Filled.TrendingUp
+    val trendIcon =
+        if (isNegative) Icons.AutoMirrored.Filled.TrendingDown else Icons.AutoMirrored.Filled.TrendingUp
 
     Card(
+        onClick = onClick,
         colors = CardDefaults.cardColors(
             containerColor = MarketCardBlack
         ),
@@ -124,7 +122,7 @@ private fun EventCard(event: TimelineEvent) {
                     }
                 }
                 Text(
-                    text = event.description,
+                    text = event.briefDescription,
                     style = MaterialTheme.typography.bodyLarge,
                     color = TextMuted,
                     modifier = Modifier.padding(top = 4.dp)

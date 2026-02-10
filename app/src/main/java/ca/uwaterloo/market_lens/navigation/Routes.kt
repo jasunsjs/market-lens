@@ -7,4 +7,5 @@ object Routes {
     const val STOCK = "stock"
     const val EVENTS = "events"
     const val AI = "ai_overview"
+    const val EVENT_OVERVIEW = "event_overview/{eventId}"
 }
