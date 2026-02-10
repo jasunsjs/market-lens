@@ -23,7 +23,7 @@ fun NavGraph() {
         composable(Routes.LOGIN) { LoginScreen(navController) }
         composable(Routes.PORTFOLIO) { PortfolioScreen(navController) }
         composable(Routes.ALERTS) { AlertsScreen() }
-        composable(Routes.STOCK) { StockScreen(navController) }
+        composable(Routes.STOCK) { StockScreen("AAPL", navController) }
         composable(Routes.EVENTS) { EventsScreen() }
         composable(Routes.AI) { AIEventScreen() }
     }
