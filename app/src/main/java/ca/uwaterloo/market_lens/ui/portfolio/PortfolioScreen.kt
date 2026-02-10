@@ -8,9 +8,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ShowChart
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -24,7 +22,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import ca.uwaterloo.market_lens.navigation.Routes
 import ca.uwaterloo.market_lens.ui.theme.*
 
 // class holding stock info for each UI element
@@ -41,125 +38,59 @@ fun PortfolioScreen(
 ) {
     var tickerInput by remember { mutableStateOf("") }
     var weightInput by remember { mutableStateOf("") }
-    val stockList = remember {mutableStateListOf<StockItemInfo>()}
+    val stockList = remember { mutableStateListOf<StockItemInfo>() }
 
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        topBar = { PortfolioTopBar() },
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp)
-                .padding(top = 16.dp)
-        ) {
-            // page header
-            Text(
-                text = "Portfolio",
-                style = MaterialTheme.typography.headlineLarge,
-                color = TextWhite
-            )
-            Text(
-                text = "Manage your tracked stocks",
-                style = MaterialTheme.typography.bodyLarge,
-                color = TextMuted,
-                modifier = Modifier.padding(top = 4.dp, bottom = 24.dp)
-            )
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp)
+            .padding(top = 24.dp)
+    ) {
+        // page header
+        Text(
+            text = "Portfolio",
+            style = MaterialTheme.typography.headlineLarge,
+            color = TextWhite
+        )
+        Text(
+            text = "Manage your tracked stocks",
+            style = MaterialTheme.typography.bodyLarge,
+            color = TextMuted,
+            modifier = Modifier.padding(top = 4.dp, bottom = 24.dp)
+        )
 
-            AddStockSection(
-                ticker = tickerInput,
-                weight = weightInput,
-                onTickerChange = { tickerInput = it },
-                onWeightChange = { weightInput = it },
-                onAddClick = {
-                    if (tickerInput.isNotEmpty()) {
-                        stockList.add(
-                            StockItemInfo(
-                                id = System.currentTimeMillis().toString(),
-                                ticker = tickerInput.uppercase(),
-                                weight = weightInput.ifEmpty { "0" }
-                            )
+        AddStockSection(
+            ticker = tickerInput,
+            weight = weightInput,
+            onTickerChange = { tickerInput = it },
+            onWeightChange = { weightInput = it },
+            onAddClick = {
+                if (tickerInput.isNotEmpty()) {
+                    stockList.add(
+                        StockItemInfo(
+                            id = System.currentTimeMillis().toString(),
+                            ticker = tickerInput.uppercase(),
+                            weight = weightInput.ifEmpty { "0" }
                         )
-                        tickerInput = ""
-                        weightInput = ""
-                    }
-                }
-            )
-
-            //stock list
-            Spacer(modifier = Modifier.height(24.dp))
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.weight(1f) // Takes up remaining space
-            ) {
-                items(stockList) { stock ->
-                    StockCard(
-                        stock = stock,
-                        onDelete = { stockList.remove(stock) }
                     )
+                    tickerInput = ""
+                    weightInput = ""
                 }
             }
-        }
-    }
-}
+        )
 
-// -- PORTFOLIO PAGE TOP BAR --//
-@Composable
-fun PortfolioTopBar() {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .background(MarketGreen, RoundedCornerShape(8.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ShowChart,
-                    contentDescription = null,
-                    tint = Color.Black,
-                    modifier = Modifier.size(20.dp)
+        //stock list
+        Spacer(modifier = Modifier.height(24.dp))
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.weight(1f) // Takes up remaining space
+        ) {
+            items(stockList) { stock ->
+                StockCard(
+                    stock = stock,
+                    onDelete = { stockList.remove(stock) }
                 )
             }
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(
-                text = "Stock Analysis",
-                style = MaterialTheme.typography.titleLarge,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextWhite
-            )
-        }
-
-        // simulate alerts
-        Button(
-            onClick = { /* Nav to Alert Page */ },
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MarketGreen,
-                contentColor = Color.Black
-            ),
-            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-            shape = RoundedCornerShape(8.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Bolt,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp)
-            )
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(
-                text = "Simulate Alert",
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
-            )
         }
     }
 }

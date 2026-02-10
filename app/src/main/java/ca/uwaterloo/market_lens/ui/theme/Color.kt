@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.Color
 
 val MarketBlack = Color(0xFF191414)      // --background
 val MarketCardBlack = Color(0xFF121212)  // --card
+val MarketBarBlack = Color(0xFF0A0A0A)  // --top bar / bottom nav
 val MarketGreen = Color(0xFF1DB954)      // --primary / --accent
 val MarketDarkGray = Color(0xFF282828)   // --secondary / --popover
 val MarketRed = Color(0xFFE22134)        // --destructive
