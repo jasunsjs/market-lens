@@ -8,6 +8,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavController
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import ca.uwaterloo.market_lens.navigation.Routes
 import ca.uwaterloo.market_lens.ui.theme.*
 
@@ -48,7 +49,7 @@ fun BottomBar(currentRoute: String?, navController: NavController) {
                 onClick = {
                     if (currentRoute != item.route) {
                         navController.navigate(item.route) {
-                            popUpTo(Routes.PORTFOLIO) {
+                            popUpTo(navController.graph.findStartDestination().id) {
                                 saveState = true
                             }
                             launchSingleTop = true
