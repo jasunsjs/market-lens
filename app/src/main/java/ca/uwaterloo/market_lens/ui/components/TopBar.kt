@@ -17,10 +17,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import ca.uwaterloo.market_lens.navigation.Routes
 import ca.uwaterloo.market_lens.ui.theme.*
 
 @Composable
-fun TopBar() {
+fun TopBar(
+    navController: NavController
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -57,7 +62,7 @@ fun TopBar() {
         // simulate alerts
         Button(
             onClick = {
-
+                navController.navigate(Routes.ALERTS)
             },
             colors = ButtonDefaults.buttonColors(
                 containerColor = MarketGreen,

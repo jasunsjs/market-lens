@@ -1,6 +1,8 @@
 package ca.uwaterloo.market_lens.navigation
 
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -18,11 +20,11 @@ import ca.uwaterloo.market_lens.ui.stock.StockScreen
 fun NavGraph() {
     val navController = rememberNavController()
     val portfolioViewModel: PortfolioViewModel = viewModel()
-    MainScreen(navController = navController) { contentModifier ->
+    MainScreen(navController = navController) { padding ->
         NavHost(
             navController = navController,
             startDestination = Routes.LOGIN,
-            modifier = contentModifier
+            modifier = Modifier.padding(padding)
         ) {
             composable(Routes.LOGIN) { LoginScreen(navController) }
             composable(Routes.PORTFOLIO) { PortfolioScreen(navController, portfolioViewModel) }

@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -26,103 +27,117 @@ fun StockScreen(
     navController: NavController,
     viewModel: StockViewModel = viewModel()
 ) {
-    Scaffold(
-        containerColor = MarketBlack,
-    ) { padding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            item {
-                // Back Button
-                TextButton(
-                    onClick = {
-                        viewModel.navigateToPortfolioPage {
-                            navController.navigate(Routes.PORTFOLIO)
-                        }
-                    },
-                    contentPadding = PaddingValues(0.dp)
-                ) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = MarketGreen)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Back to Portfolio", color = MarketGreen)
-                }
-            }
+    // placeholder news data
+    val newsItems = listOf(
+        "Earnings Beat: $ticker reported record revenue growth.",
+        "Market Trends: How $ticker is leading the tech sector.",
+        "Analyst Alert: New price target set for $ticker.",
+        "Breaking: Major partnership announced for $ticker."
+    )
 
-            // Header Section
-            item {
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = MarketCardBlack),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier.padding(24.dp).fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text(ticker, style = MaterialTheme.typography.headlineLarge)
-                            Text("Real-time Stock Analysis", style = MaterialTheme.typography.bodyLarge)
-                        }
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text("$162.24", style = MaterialTheme.typography.headlineLarge)
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.TrendingUp, null, tint = MarketGreen, modifier = Modifier.size(16.dp))
-                                Text("+3.02 (+1.90%)", color = MarketGreen, style = MaterialTheme.typography.bodyLarge)
-                            }
-                        }
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        item {
+            // Back Button
+            TextButton(
+                onClick = {
+                    viewModel.navigateToPortfolioPage {
+                        navController.navigate(Routes.PORTFOLIO)
                     }
-                }
+                },
+                contentPadding = PaddingValues(0.dp)
+            ) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = MarketGreen)
+                Spacer(Modifier.width(8.dp))
+                Text("Back to Portfolio", color = MarketGreen)
             }
-            // Metrics Grid
-            item {
+        }
+
+        // header
+        item {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MarketCardBlack),
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    modifier = Modifier.padding(24.dp).fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    MetricCard("Market Cap", "$380.5B", modifier = Modifier.weight(1f))
-                    MetricCard("Volume", "20.2M", modifier = Modifier.weight(1f))
-                    MetricCard("P/E Ratio", "31.4", modifier = Modifier.weight(1f))
-                }
-            }
-            // Chart and graphs
-            item {
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = MarketCardBlack),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.padding(20.dp)) {
-                        Text("30-Day Price History", style = MaterialTheme.typography.titleLarge)
-                        Spacer(Modifier.height(20.dp))
-
-                        // Placeholder for your chart library/custom drawing
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(250.dp)
-                                .background(Color.DarkGray.copy(alpha = 0.2f), RoundedCornerShape(8.dp)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("Chart Visualization Here", color = TextMuted)
+                    Column {
+                        Text(ticker, style = MaterialTheme.typography.headlineLarge)
+                        Text("Real-time Stock Analysis", style = MaterialTheme.typography.bodyLarge)
+                    }
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text("$162.24", style = MaterialTheme.typography.headlineLarge)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.TrendingUp, null, tint = MarketGreen, modifier = Modifier.size(16.dp))
+                            Text("+3.02 (+1.90%)", color = MarketGreen, style = MaterialTheme.typography.bodyLarge)
                         }
                     }
                 }
             }
-            item {
+        }
+        // Metrics Grid
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                MetricCard("Market Cap", "$380.5B", modifier = Modifier.weight(1f))
+                MetricCard("Volume", "20.2M", modifier = Modifier.weight(1f))
+                MetricCard("P/E Ratio", "31.4", modifier = Modifier.weight(1f))
+            }
+        }
+        // Chart and graphs
+        item {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MarketCardBlack),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(20.dp)) {
+                    Text("30-Day Price History", style = MaterialTheme.typography.titleLarge)
+                    Spacer(Modifier.height(20.dp))
+                    //placeholder chart
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(250.dp)
+                            .background(Color.DarkGray.copy(alpha = 0.2f), RoundedCornerShape(8.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("Chart Visualization Here", color = TextMuted)
+                    }
+                }
+            }
+        }
+        //news and events
+        item {
+            Text("Recent News & Events",
+                style = MaterialTheme.typography.titleLarge)
+        }
+        items(newsItems) { news ->
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MarketCardBlack),
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Text(
-                    "Recent News & Events",
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.padding(vertical = 8.dp)
+                    text = news,
+                    modifier = Modifier.padding(16.dp),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = TextWhite
                 )
             }
-            // keep as extra scroll room
-            item { Spacer(Modifier.height(40.dp)) }
         }
+        item { Spacer(Modifier.height(40.dp)) }
     }
 }
+
 
 @Composable
 fun MetricCard(
