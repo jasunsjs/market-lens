@@ -1,4 +1,5 @@
 package ca.uwaterloo.market_lens.ui.portfolio
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -8,6 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
@@ -25,13 +27,6 @@ import androidx.navigation.NavController
 import ca.uwaterloo.market_lens.navigation.Routes
 import ca.uwaterloo.market_lens.ui.theme.*
 
-// class holding stock info for each UI element
-data class StockItemInfo(
-    val id: String,
-    val ticker: String,
-    val weight: String
-)
-
 @Composable
 fun PortfolioScreen(
     navController: NavController,
@@ -39,9 +34,10 @@ fun PortfolioScreen(
 ) {
     var tickerInput by remember { mutableStateOf("") }
     var weightInput by remember { mutableStateOf("") }
+
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        ) { paddingValues ->
+    ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
