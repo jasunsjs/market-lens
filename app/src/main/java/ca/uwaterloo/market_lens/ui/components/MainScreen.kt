@@ -18,7 +18,7 @@ fun MainScreen(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    val showBars = currentRoute in listOf(Routes.PORTFOLIO, Routes.ALERTS, Routes.EVENTS)
+    val showBars = currentRoute in listOf(Routes.PORTFOLIO, Routes.ALERTS, Routes.EVENTS, Routes.STOCK)
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
