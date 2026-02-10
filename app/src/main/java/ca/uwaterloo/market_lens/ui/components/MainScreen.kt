@@ -18,17 +18,19 @@ fun MainScreen(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    val showBars = currentRoute in listOf(Routes.PORTFOLIO, Routes.ALERTS, Routes.EVENTS)
+    val showTopBar = currentRoute in listOf(Routes.PORTFOLIO, Routes.ALERTS, Routes.EVENTS)
+            || currentRoute?.startsWith("event_overview") == true
+    val showBottomBar = currentRoute in listOf(Routes.PORTFOLIO, Routes.ALERTS, Routes.EVENTS)
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            if (showBars) {
+            if (showTopBar) {
                 TopBar()
             }
         },
         bottomBar = {
-            if (showBars) {
+            if (showBottomBar) {
                 BottomBar(currentRoute = currentRoute, navController = navController)
             }
         }
