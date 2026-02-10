@@ -10,18 +10,19 @@ import ca.uwaterloo.market_lens.ui.alerts.AlertsScreen
 import ca.uwaterloo.market_lens.ui.events.EventsScreen
 import ca.uwaterloo.market_lens.ui.login.LoginScreen
 import ca.uwaterloo.market_lens.ui.portfolio.PortfolioScreen
+import ca.uwaterloo.market_lens.ui.portfolio.PortfolioViewModel
 import ca.uwaterloo.market_lens.ui.stock.StockScreen
 
 @Composable
 fun NavGraph() {
     val navController = rememberNavController()
-
+    val portfolioViewModel: PortfolioViewModel = viewModel()
     NavHost(
         navController = navController,
         startDestination = Routes.LOGIN
     ) {
         composable(Routes.LOGIN) { LoginScreen(navController) }
-        composable(Routes.PORTFOLIO) { PortfolioScreen(navController) }
+        composable(Routes.PORTFOLIO) { PortfolioScreen(navController, portfolioViewModel) }
         composable(Routes.ALERTS) { AlertsScreen() }
         composable(Routes.STOCK) { StockScreen("AAPL", navController) }
         composable(Routes.EVENTS) { EventsScreen() }

@@ -38,11 +38,10 @@ data class StockItemInfo(
 @Composable
 fun PortfolioScreen(
     navController: NavController,
-    viewModel: PortfolioViewModel = viewModel()
+    viewModel: PortfolioViewModel
 ) {
     var tickerInput by remember { mutableStateOf("") }
     var weightInput by remember { mutableStateOf("") }
-    val stockList = remember {mutableStateListOf<StockItemInfo>()}
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -75,13 +74,12 @@ fun PortfolioScreen(
                 onWeightChange = { weightInput = it },
                 onAddClick = {
                     if (tickerInput.isNotEmpty()) {
-                        stockList.add(
-                            StockItemInfo(
-                                id = System.currentTimeMillis().toString(),
-                                ticker = tickerInput.uppercase(),
-                                weight = weightInput.ifEmpty { "0" }
-                            )
+                        val stockToAdd = StockItemInfo(
+                            id = System.currentTimeMillis().toString(),
+                            ticker = tickerInput.uppercase(),
+                            weight = weightInput.ifEmpty { "0" }
                         )
+                        viewModel.addStock(stockToAdd)
                         tickerInput = ""
                         weightInput = ""
                     }
@@ -94,10 +92,10 @@ fun PortfolioScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.weight(1f) // Takes up remaining space
             ) {
-                items(stockList) { stock ->
+                items(viewModel.stockList) { stock ->
                     StockCard(
                         stock = stock,
-                        onDelete = { stockList.remove(stock) },
+                        onDelete = { viewModel.removeStock(stock) },
                         navController,
                         viewModel
                     )
