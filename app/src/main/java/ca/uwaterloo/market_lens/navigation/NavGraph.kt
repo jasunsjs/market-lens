@@ -8,11 +8,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import ca.uwaterloo.market_lens.ui.components.MainScreen
+import ca.uwaterloo.market_lens.ui.auth.LoginScreen
+import ca.uwaterloo.market_lens.ui.auth.SignupScreen
 import ca.uwaterloo.market_lens.ui.ai_event.AIEventScreen
 import ca.uwaterloo.market_lens.ui.alerts.AlertsScreen
 import ca.uwaterloo.market_lens.ui.events.EventOverviewScreen
 import ca.uwaterloo.market_lens.ui.events.EventsScreen
-import ca.uwaterloo.market_lens.ui.login.LoginScreen
 import ca.uwaterloo.market_lens.ui.portfolio.PortfolioScreen
 import ca.uwaterloo.market_lens.ui.portfolio.PortfolioViewModel
 import ca.uwaterloo.market_lens.ui.stock.StockScreen
@@ -29,6 +30,7 @@ fun NavGraph() {
             modifier = contentModifier
         ) {
             composable(Routes.LOGIN) { LoginScreen(navController) }
+            composable(Routes.SIGNUP) { SignupScreen(navController) }
             composable(Routes.PORTFOLIO) { PortfolioScreen(navController, portfolioViewModel) }
             composable(Routes.ALERTS) { AlertsScreen() }
             composable(Routes.STOCK) { StockScreen("AAPL", navController) }

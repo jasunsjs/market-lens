@@ -2,6 +2,7 @@ package ca.uwaterloo.market_lens.navigation
 
 object Routes {
     const val LOGIN = "login"
+    const val SIGNUP = "signup"
     const val PORTFOLIO = "portfolio"
     const val ALERTS = "alerts"
     const val STOCK = "stock"
