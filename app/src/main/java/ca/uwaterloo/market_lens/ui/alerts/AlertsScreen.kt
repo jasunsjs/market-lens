@@ -24,6 +24,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
@@ -44,7 +45,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -98,8 +98,6 @@ fun AlertConfigCard(
         mutableStateOf(formatThresholdValue(uiState.threshold))
     }
 
-    val whiteInputTextStyle = TextStyle(color = TextWhite)
-
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -128,23 +126,19 @@ fun AlertConfigCard(
                     value = uiState.alertType.label,
                     onValueChange = {},
                     readOnly = true,
-                    textStyle = whiteInputTextStyle,
                     trailingIcon = {
                         ExposedDropdownMenuDefaults.TrailingIcon(expanded = dropdownExpanded)
                     },
                     modifier = Modifier
-                        .menuAnchor()
+                        .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
                         .fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedContainerColor = MarketDarkGray,
                         unfocusedContainerColor = MarketDarkGray,
-                        focusedBorderColor = MaterialTheme.colorScheme.outline,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        focusedBorderColor = Color.Transparent,
+                        unfocusedBorderColor = Color.Transparent,
                         focusedTextColor = TextWhite,
-                        unfocusedTextColor = TextWhite,
-                        disabledTextColor = TextWhite,
-                        focusedTrailingIconColor = TextWhite,
-                        unfocusedTrailingIconColor = TextWhite
+                        unfocusedTextColor = TextWhite
                     ),
                     shape = RoundedCornerShape(8.dp),
                     singleLine = true
@@ -193,18 +187,17 @@ fun AlertConfigCard(
                         thresholdInput = cleaned
                         cleaned.toFloatOrNull()?.let(onThresholdChanged)
                     },
-                    textStyle = whiteInputTextStyle,
                     modifier = Modifier.width(160.dp),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedContainerColor = MarketDarkGray,
                         unfocusedContainerColor = MarketDarkGray,
-                        focusedBorderColor = MaterialTheme.colorScheme.outline,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        focusedBorderColor = Color.Transparent,
+                        unfocusedBorderColor = Color.Transparent,
+                        cursorColor = MarketGreen,
                         focusedTextColor = TextWhite,
-                        unfocusedTextColor = TextWhite,
-                        cursorColor = MarketGreen
+                        unfocusedTextColor = TextWhite
                     ),
                     shape = RoundedCornerShape(8.dp)
                 )
