@@ -13,7 +13,7 @@ class AuthViewModel : ViewModel() {
     private val _error = MutableStateFlow<String?>(null)
     val error = _error.asStateFlow()
 
-    fun submit(_email: String, _password: String, onSuccess: () -> Unit) {
+    fun submit(email: String, password: String, onSuccess: () -> Unit) {
         //        if (email.isBlank() || pass.isBlank()) {
         //            _error.value = "Please fill in all fields"
         //            return
