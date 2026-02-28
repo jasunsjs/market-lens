@@ -1,4 +1,8 @@
 package ca.uwaterloo.market_lens.domain.model
 
-class Prices {
-}
+data class PriceSeries(
+    val tickerKey: String,
+    val range: PriceRange,
+    val points: List<PricePoint>
+)
+
