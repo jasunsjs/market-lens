@@ -63,8 +63,16 @@
 //    override suspend fun getAlertRules(): List<AlertRule> =
 //        alertsRepository.getAlertRules()
 //
-//    override suspend fun upsertAlertRule(tickerKey: String, alertType: AlertType, threshold: Double, enabled: Boolean) {
-//        alertsRepository.upsertAlertRule(tickerKey, alertType, threshold, enabled)
+//    override suspend fun addAlertRule(tickerKey: String, alertType: AlertType, threshold: Double, enabled: Boolean) {
+//        alertsRepository.addAlertRule(tickerKey, alertType, threshold, enabled)
+//    }
+//
+//    override suspend fun editAlertRule(rule: AlertRule) {
+//        alertsRepository.editAlertRule(rule)
+//    }
+//
+//    override suspend fun deleteAlertRule(ruleId: String) {
+//        alertsRepository.deleteAlertRule(ruleId)
 //    }
 //
 //    override suspend fun getEvents(): List<MarketEvent> =
