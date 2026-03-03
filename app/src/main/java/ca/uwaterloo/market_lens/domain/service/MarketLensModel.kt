@@ -27,11 +27,11 @@ interface MarketLensModel {
 
     // Stock detail
     suspend fun getPriceSeries(tickerKey: String, range: PriceRange): PriceSeries
-    // suspend fun getNewsForTicker(tickerKey: String): List<NewsItem>
+    // suspend fun getNewsByTicker(tickerKey: String): List<NewsItem>
 
     // Alerts
     // suspend fun getAlertRules(): List<AlertRule>
-    suspend fun upsertAlertRule(tickerKey: String, percentThreshold: Double, enabled: Boolean)
+    suspend fun upsertAlertRule(tickerKey: String, alertType: AlertType, threshold: Double, enabled: Boolean)
 
     // Events
 //    suspend fun getEvents(): List<MarketEvent>
