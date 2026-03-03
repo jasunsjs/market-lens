@@ -1,0 +1,9 @@
+package ca.uwaterloo.market_lens.domain.model
+
+data class EventCause(
+    val eventId: String,
+    val newsItemId: String,
+    val rank: Int,
+    val relevanceScore: Double,
+    val rationale: String
+)
