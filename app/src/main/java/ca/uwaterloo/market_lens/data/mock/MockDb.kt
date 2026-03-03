@@ -8,9 +8,33 @@ object MockDb {
 
     // Quotes by tickerKey
     val quotes: MutableMap<String, StockQuote> = mutableMapOf(
-        "AAPL" to StockQuote("AAPL", 190.12, -0.84, Instant.now(), volume = 45_000_000, marketCap = 2_900_000_000_000, peRatio = 29.1),
-        "MSFT" to StockQuote("MSFT", 410.44, 1.22, Instant.now(), volume = 28_000_000, marketCap = 3_000_000_000_000, peRatio = 35.7),
-        "NVDA" to StockQuote("NVDA", 850.01, 2.45, Instant.now(), volume = 52_000_000, marketCap = 2_100_000_000_000, peRatio = 70.3)
+        "AAPL" to StockQuote(
+            "AAPL",
+            190.12,
+            -0.84,
+            Instant.now(),
+            volume = 45_000_000,
+            marketCap = 2_900_000_000_000,
+            peRatio = 29.1
+        ),
+        "MSFT" to StockQuote(
+            "MSFT",
+            410.44,
+            1.22,
+            Instant.now(),
+            volume = 28_000_000,
+            marketCap = 3_000_000_000_000,
+            peRatio = 35.7
+        ),
+        "NVDA" to StockQuote(
+            "NVDA",
+            850.01,
+            2.45,
+            Instant.now(),
+            volume = 52_000_000,
+            marketCap = 2_100_000_000_000,
+            peRatio = 70.3
+        )
     )
 
     // Price series by (tickerKey, range)
@@ -32,4 +56,18 @@ object MockDb {
             ("NVDA" to PriceRange.ONE_MONTH) to genSeries("NVDA", PriceRange.ONE_MONTH, 780.0)
         )
     }
+
+    val portfolioPositions: MutableList<PortfolioPosition> = mutableListOf()
+
+    val events: MutableList<MarketEvent> = mutableListOf()
+
+    val eventCauses: MutableList<EventCause> = mutableListOf()
+
+    val newsItems: MutableList<NewsItem> = mutableListOf()
+
+    val alertRules: MutableList<AlertRule> = mutableListOf()
+
+    val aiExplanations: MutableMap<String, AiExplanation> = mutableMapOf()
+
+    val stockAnalyses: MutableMap<String, StockAnalysis> = mutableMapOf()
 }

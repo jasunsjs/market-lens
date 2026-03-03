@@ -57,14 +57,14 @@
 //    override suspend fun getPriceSeries(tickerKey: String, range: PriceRange): PriceSeries =
 //        marketDataRepository.getPriceSeries(tickerKey, range)
 //
-//    override suspend fun getNewsForTicker(tickerKey: String): List<NewsItem> =
-//        newsRepository.getNewsForTicker(tickerKey)
+//    override suspend fun getNewsByTicker(tickerKey: String): List<NewsItem> =
+//        newsRepository.getNewsByTicker(tickerKey)
 //
 //    override suspend fun getAlertRules(): List<AlertRule> =
 //        alertsRepository.getAlertRules()
 //
-//    override suspend fun upsertAlertRule(tickerKey: String, percentThreshold: Double, enabled: Boolean) {
-//        alertsRepository.upsertAlertRule(tickerKey, percentThreshold, enabled)
+//    override suspend fun upsertAlertRule(tickerKey: String, alertType: AlertType, threshold: Double, enabled: Boolean) {
+//        alertsRepository.upsertAlertRule(tickerKey, alertType, threshold, enabled)
 //    }
 //
 //    override suspend fun getEvents(): List<MarketEvent> =

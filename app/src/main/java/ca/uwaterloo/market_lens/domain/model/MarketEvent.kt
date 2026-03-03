@@ -10,5 +10,6 @@ data class MarketEvent(
     val startTime: Instant,
     val detectedAt: Instant,
     val priceBefore: Double,
-    val priceAfter: Double
+    val priceAfter: Double,
+    val briefDescription: String
 )
