@@ -33,7 +33,13 @@ fun NavGraph() {
             composable(Routes.SIGNUP) { SignupScreen(navController) }
             composable(Routes.PORTFOLIO) { PortfolioScreen(navController, portfolioViewModel) }
             composable(Routes.ALERTS) { AlertsScreen() }
-            composable(Routes.STOCK) { StockScreen("AAPL", navController) }
+            composable(
+                Routes.STOCK,
+                arguments = listOf(navArgument("ticker") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val ticker = backStackEntry.arguments?.getString("ticker") ?: "AAPL"
+                StockScreen(ticker, navController)
+            }
             composable(Routes.EVENTS) { EventsScreen(navController) }
             composable(
                 Routes.EVENT_OVERVIEW,

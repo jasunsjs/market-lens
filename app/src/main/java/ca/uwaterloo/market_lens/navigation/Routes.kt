@@ -5,8 +5,10 @@ object Routes {
     const val SIGNUP = "signup"
     const val PORTFOLIO = "portfolio"
     const val ALERTS = "alerts"
-    const val STOCK = "stock"
+    const val STOCK = "stock/{ticker}"
     const val EVENTS = "events"
     const val AI = "ai_overview"
     const val EVENT_OVERVIEW = "event_overview/{eventId}"
+
+    fun stockDetail(ticker: String) = "stock/$ticker"
 }

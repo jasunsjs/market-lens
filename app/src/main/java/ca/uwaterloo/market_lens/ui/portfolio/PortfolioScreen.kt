@@ -90,8 +90,9 @@ fun PortfolioScreen(
                             price = if (quote != null) String.format("$%,.2f", quote.price) else "...",
                             change = if (quote != null) String.format("%.2f%%", quote.changePercent) else "...",
                             onDelete = { viewModel.removeStock(position.tickerKey) },
-                            navController = navController,
-                            viewModel = viewModel
+                            onCardClick = {
+                                navController.navigate(Routes.stockDetail(position.tickerKey))
+                            }
                         )
                     }
                 }
@@ -197,18 +198,13 @@ fun StockCard(
     price: String,
     change: String,
     onDelete: () -> Unit,
-    navController: NavController,
-    viewModel: PortfolioViewModel
+    onCardClick: () -> Unit
 ) {
     Card(
         colors = CardDefaults.cardColors(containerColor = MarketCardBlack),
         shape = RoundedCornerShape(12.dp),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        modifier = Modifier.fillMaxWidth().clickable {
-            viewModel.navigateToStockPage(ticker) {
-                navController.navigate(Routes.STOCK)
-            }
-        }
+        modifier = Modifier.fillMaxWidth().clickable { onCardClick() }
     ) {
         Row(
             modifier = Modifier.padding(16.dp).fillMaxWidth(),
