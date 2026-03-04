@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Add
@@ -19,7 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -33,7 +31,7 @@ fun PortfolioScreen(
     viewModel: PortfolioViewModel = viewModel()
 ) {
     var tickerInput by remember { mutableStateOf("") }
-    var weightInput by remember { mutableStateOf("") }
+    val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -45,7 +43,6 @@ fun PortfolioScreen(
                 .padding(horizontal = 16.dp)
                 .padding(top = 16.dp)
         ) {
-            // page header
             Text(
                 text = "Portfolio",
                 style = MaterialTheme.typography.headlineLarge,
@@ -57,37 +54,81 @@ fun PortfolioScreen(
                 color = TextMuted,
                 modifier = Modifier.padding(top = 4.dp, bottom = 24.dp)
             )
+
+            PortfolioSummaryCard(
+                totalValue = uiState.totalValue,
+                netChange = uiState.netChange,
+                netChangePercent = uiState.netChangePercent
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
             AddStockSection(
                 ticker = tickerInput,
-                weight = weightInput,
                 onTickerChange = { tickerInput = it },
-                onWeightChange = { weightInput = it },
                 onAddClick = {
                     if (tickerInput.isNotEmpty()) {
-                        viewModel.addStock(
-                            StockItemInfo(
-                                id = System.currentTimeMillis().toString(),
-                                ticker = tickerInput.uppercase(),
-                                weight = weightInput.ifEmpty { "0" }
-                            )
-                        )
+                        viewModel.addStock(tickerInput.uppercase())
                         tickerInput = ""
-                        weightInput = ""
                     }
                 }
             )
-            //stock list
+
             Spacer(modifier = Modifier.height(24.dp))
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.weight(1f) // Takes up remaining space
-            ) {
-                items(viewModel.stockList) { stock ->
-                    StockCard(
-                        stock = stock,
-                        onDelete = { viewModel.removeStock(stock) },
-                        navController,
-                        viewModel
+            if (uiState.isLoading) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = MarketGreen)
+                }
+            } else {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    items(uiState.positions) { position ->
+                        val quote = uiState.quotes[position.tickerKey]
+                        StockCard(
+                            ticker = position.tickerKey,
+                            price = if (quote != null) String.format("$%,.2f", quote.price) else "...",
+                            change = if (quote != null) String.format("%.2f%%", quote.changePercent) else "...",
+                            onDelete = { viewModel.removeStock(position.tickerKey) },
+                            navController = navController,
+                            viewModel = viewModel
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun PortfolioSummaryCard(totalValue: String, netChange: String, netChangePercent: String) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MarketCardBlack),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(24.dp)
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text("Total Value", style = MaterialTheme.typography.bodyLarge, color = TextMuted)
+                Text(totalValue, style = MaterialTheme.typography.headlineLarge)
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                Text("Net Change", style = MaterialTheme.typography.bodyLarge, color = TextMuted)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.TrendingUp,
+                        null, tint = MarketGreen,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Text(
+                        "$netChange $netChangePercent",
+                        color = MarketGreen,
+                        style = MaterialTheme.typography.bodyLarge
                     )
                 }
             }
@@ -95,13 +136,10 @@ fun PortfolioScreen(
     }
 }
 
-// -- PORTFOLIO STOCK ADD/DELETE --//
 @Composable
 fun AddStockSection(
     ticker: String,
-    weight: String,
     onTickerChange: (String) -> Unit,
-    onWeightChange: (String) -> Unit,
     onAddClick: () -> Unit
 ) {
     Row(
@@ -109,7 +147,6 @@ fun AddStockSection(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // stock name
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = "Ticker Symbol",
@@ -135,36 +172,8 @@ fun AddStockSection(
             )
         }
 
-        // stock weight
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = "Weight %",
-                style = MaterialTheme.typography.labelMedium,
-                modifier = Modifier.padding(bottom = 6.dp)
-            )
-            OutlinedTextField(
-                value = weight,
-                onValueChange = onWeightChange,
-                placeholder = { Text("Optional", color = TextMuted) },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = MarketDarkGray,
-                    unfocusedContainerColor = MarketDarkGray,
-                    focusedBorderColor = Color.Transparent,
-                    unfocusedBorderColor = Color.Transparent,
-                    cursorColor = MarketGreen,
-                    focusedTextColor = TextWhite,
-                    unfocusedTextColor = TextWhite
-                ),
-                shape = RoundedCornerShape(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
-
-        // add stocks
         Column {
-            Spacer(modifier = Modifier.height(22.dp)) // Align with text fields
+            Spacer(modifier = Modifier.height(22.dp))
             Button(
                 onClick = onAddClick,
                 colors = ButtonDefaults.buttonColors(
@@ -182,66 +191,42 @@ fun AddStockSection(
     }
 }
 
-// -- INDIVIDUAL STOCK CARDS --//
 @Composable
 fun StockCard(
-    stock: StockItemInfo,
+    ticker: String,
+    price: String,
+    change: String,
     onDelete: () -> Unit,
     navController: NavController,
     viewModel: PortfolioViewModel
 ) {
     Card(
-        colors = CardDefaults.cardColors(
-            containerColor = MarketCardBlack
-        ),
+        colors = CardDefaults.cardColors(containerColor = MarketCardBlack),
         shape = RoundedCornerShape(12.dp),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        modifier = Modifier.fillMaxWidth().clickable() {
-            viewModel.navigateToStockPage(stock) {
+        modifier = Modifier.fillMaxWidth().clickable {
+            viewModel.navigateToStockPage(ticker) {
                 navController.navigate(Routes.STOCK)
             }
         }
     ) {
         Row(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
+            modifier = Modifier.padding(16.dp).fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(MarketDarkGray),
+                modifier = Modifier.size(48.dp).clip(RoundedCornerShape(8.dp)).background(MarketDarkGray),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = stock.ticker,
-                    color = MarketGreen,
-                    fontWeight = FontWeight.Bold
-                )
+                Text(text = ticker, color = MarketGreen, fontWeight = FontWeight.Bold)
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stock.ticker,
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Text(
-                    text = "Weight: ${stock.weight}%",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = TextMuted,
-                    fontSize = 14.sp
-                )
+                Text(text = ticker, style = MaterialTheme.typography.titleMedium)
+                Text(text = "Price: $price ($change)", style = MaterialTheme.typography.bodyLarge, color = TextMuted, fontSize = 14.sp)
             }
-
-            // delete stocks
             IconButton(onClick = onDelete) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "Delete",
-                    tint = MarketRed
-                )
+                Icon(imageVector = Icons.Default.Close, contentDescription = "Delete", tint = MarketRed)
             }
         }
     }
