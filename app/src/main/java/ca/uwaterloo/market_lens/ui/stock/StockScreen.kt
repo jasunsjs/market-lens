@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -91,9 +92,9 @@ fun StockScreen(
 
                 item {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        MetricCard("Market Cap", String.format("$%,d", quote.marketCap ?: 0), modifier = Modifier.weight(1f))
-                        MetricCard("Volume", String.format("%,d", quote.volume ?: 0), modifier = Modifier.weight(1f))
-                        MetricCard("P/E Ratio", String.format("%.2f", quote.peRatio ?: 0.0), modifier = Modifier.weight(1f))
+                        MetricCard("Market Cap", formatLargeNumber(quote.marketCap ?: 0, isCurrency = true), modifier = Modifier.weight(1f))
+                        MetricCard("Volume", formatLargeNumber(quote.volume ?: 0, isCurrency = false), modifier = Modifier.weight(1f))
+                        MetricCard("P/E Ratio", String.format("%.1f", quote.peRatio ?: 0.0), modifier = Modifier.weight(1f))
                     }
                 }
             }
@@ -117,13 +118,29 @@ fun StockScreen(
     }
 }
 
+private fun formatLargeNumber(number: Long, isCurrency: Boolean): String {
+    val suffix = when {
+        number >= 1_000_000_000_000L -> String.format("%.1fT", number / 1_000_000_000_000.0)
+        number >= 1_000_000_000L -> String.format("%.1fB", number / 1_000_000_000.0)
+        number >= 1_000_000L -> String.format("%.1fM", number / 1_000_000.0)
+        else -> number.toString()
+    }
+    return if (isCurrency) "$$suffix" else suffix
+}
+
 @Composable
 fun MetricCard(label: String, value: String, modifier: Modifier = Modifier) {
-    Card(colors = CardDefaults.cardColors(containerColor = MarketCardBlack), modifier = modifier.height(120.dp), border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f))) {
+    Card(colors = CardDefaults.cardColors(containerColor = MarketCardBlack), modifier = modifier.height(100.dp), border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f))) {
         Column(modifier = Modifier.padding(12.dp).fillMaxSize(), verticalArrangement = Arrangement.Center) {
             Text(label, style = MaterialTheme.typography.labelMedium, color = TextMuted)
-            Spacer(Modifier.height(8.dp))
-            Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = value, 
+                style = MaterialTheme.typography.titleMedium, 
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
     }
 }
