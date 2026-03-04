@@ -7,43 +7,83 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import ca.uwaterloo.market_lens.domain.model.AlertRule
+import ca.uwaterloo.market_lens.navigation.Routes
 import ca.uwaterloo.market_lens.ui.theme.*
 
 @Composable
-fun AlertsScreen(viewModel: AlertsViewModel = viewModel()) {
+fun AlertsScreen(
+    viewModel: AlertsViewModel = viewModel(),
+    navController: NavController? = null
+) {
     val uiState by viewModel.uiState.collectAsState()
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp).padding(top = 24.dp)
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp)
+            .padding(top = 24.dp)
     ) {
-        Text(text = "Alert Configuration", style = MaterialTheme.typography.headlineLarge, color = TextWhite)
-        Text(text = "Control notification thresholds", style = MaterialTheme.typography.bodyLarge, color = TextMuted, modifier = Modifier.padding(top = 4.dp, bottom = 24.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(text = "Portfolio Alerts", style = MaterialTheme.typography.headlineLarge, color = TextWhite)
+                Text(text = "Manage your notification rules", style = MaterialTheme.typography.bodyLarge, color = TextMuted)
+            }
+            
+            Button(
+                onClick = { navController?.navigate(Routes.CREATE_ALERT) },
+                colors = ButtonDefaults.buttonColors(containerColor = MarketGreen, contentColor = Color.Black),
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.height(44.dp)
+            ) {
+                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Add", fontWeight = FontWeight.Bold, color = MarketBlack)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
 
         if (uiState.isLoading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = MarketGreen)
             }
         } else {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                items(uiState.alertRules) { rule ->
-                    AlertRuleCard(
-                        rule = rule,
-                        onEnabledChange = { enabled -> viewModel.onAlertEnabledChanged(rule.id, enabled) },
-                        onDelete = { viewModel.deleteAlertRule(rule.id) }
-                    )
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                contentPadding = PaddingValues(bottom = 24.dp)
+            ) {
+                if (uiState.alertRules.isEmpty()) {
+                    item {
+                        Box(modifier = Modifier.fillMaxWidth().padding(top = 40.dp), contentAlignment = Alignment.Center) {
+                            Text("No active alerts for your portfolio", color = TextMuted)
+                        }
+                    }
+                } else {
+                    items(uiState.alertRules) { rule ->
+                        AlertRuleCard(
+                            rule = rule,
+                            onEnabledChange = { enabled -> viewModel.onAlertEnabledChanged(rule.id, enabled) },
+                            onDelete = { viewModel.deleteAlertRule(rule.id) }
+                        )
+                    }
                 }
             }
         }
@@ -52,7 +92,12 @@ fun AlertsScreen(viewModel: AlertsViewModel = viewModel()) {
 
 @Composable
 fun AlertRuleCard(rule: AlertRule, onEnabledChange: (Boolean) -> Unit, onDelete: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = MarketCardBlack), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)) {
+    Card(
+        modifier = Modifier.fillMaxWidth(), 
+        shape = RoundedCornerShape(12.dp), 
+        colors = CardDefaults.cardColors(containerColor = MarketCardBlack), 
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+    ) {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {

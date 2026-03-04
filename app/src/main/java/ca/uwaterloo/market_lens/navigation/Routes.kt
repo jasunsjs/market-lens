@@ -5,6 +5,7 @@ object Routes {
     const val SIGNUP = "signup"
     const val PORTFOLIO = "portfolio"
     const val ALERTS = "alerts"
+    const val CREATE_ALERT = "create_alert"
     const val STOCK = "stock/{ticker}"
     const val EVENTS = "events"
     const val AI = "ai_overview"

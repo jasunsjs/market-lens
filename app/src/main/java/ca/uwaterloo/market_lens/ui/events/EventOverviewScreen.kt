@@ -15,8 +15,10 @@ import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material3.*
 import android.content.Intent
-import android.net.Uri
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -26,18 +28,35 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import ca.uwaterloo.market_lens.domain.model.AiExplanation
+import ca.uwaterloo.market_lens.domain.model.EventCause
+import ca.uwaterloo.market_lens.domain.model.MarketEvent
 import ca.uwaterloo.market_lens.ui.theme.*
 import androidx.core.net.toUri
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun EventOverviewScreen(
     eventId: String,
     navController: NavController,
-    viewModel: EventsViewModel = viewModel()
+    viewModel: EventOverviewViewModel = viewModel()
 ) {
-    val data = viewModel.getEventData(eventId)
+    val uiState by viewModel.uiState.collectAsState()
 
-    if (data == null) {
+    LaunchedEffect(eventId) {
+        viewModel.loadEventDetail(eventId)
+    }
+
+    if (uiState.isLoading) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(color = MarketGreen)
+        }
+        return
+    }
+
+    val event = uiState.event
+    if (event == null) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -62,13 +81,13 @@ fun EventOverviewScreen(
     ) {
         BackToTimelineRow(navController)
         Spacer(modifier = Modifier.height(16.dp))
-        EventHeaderCard(data)
+        EventHeaderCard(event)
         Spacer(modifier = Modifier.height(16.dp))
-        AiExplanationCard(data.aiExplanation)
+        uiState.explanation?.let { AiExplanationCard(it.summary) }
         Spacer(modifier = Modifier.height(16.dp))
-        ContributingFactorsCard(data.contributingFactors)
+        ContributingFactorsCard(uiState.causes)
         Spacer(modifier = Modifier.height(16.dp))
-        OverallConfidenceCard(data.overallConfidence)
+        uiState.explanation?.let { OverallConfidenceCard((it.confidence * 100).toInt()) }
     }
 }
 
@@ -95,8 +114,8 @@ private fun BackToTimelineRow(navController: NavController) {
 }
 
 @Composable
-private fun EventHeaderCard(data: EventData) {
-    val isNegative = data.percentChange < 0
+private fun EventHeaderCard(data: MarketEvent) {
+    val isNegative = data.percentMove < 0
     val trendColor = if (isNegative) MarketRed else MarketGreen
     val trendIcon =
         if (isNegative) Icons.AutoMirrored.Filled.TrendingDown else Icons.AutoMirrored.Filled.TrendingUp
@@ -136,7 +155,7 @@ private fun EventHeaderCard(data: EventData) {
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Text(
-                        text = data.ticker,
+                        text = data.tickerKey,
                         style = MaterialTheme.typography.headlineLarge,
                         fontWeight = FontWeight.Bold,
                         color = TextWhite
@@ -146,7 +165,7 @@ private fun EventHeaderCard(data: EventData) {
                         shape = RoundedCornerShape(6.dp)
                     ) {
                         Text(
-                            text = "${data.percentChange}%",
+                            text = String.format("%.1f%%", data.percentMove),
                             style = MaterialTheme.typography.bodyLarge,
                             color = TextWhite,
                             fontWeight = FontWeight.Bold,
@@ -155,7 +174,9 @@ private fun EventHeaderCard(data: EventData) {
                     }
                 }
                 Text(
-                    text = data.timestamp,
+                    text = DateTimeFormatter.ofPattern("MMM dd, yyyy - h:mm a")
+                        .withZone(ZoneId.systemDefault())
+                        .format(data.detectedAt),
                     style = MaterialTheme.typography.bodyLarge,
                     color = TextMuted,
                     modifier = Modifier.padding(top = 8.dp)
@@ -190,7 +211,7 @@ private fun AiExplanationCard(explanation: String) {
 }
 
 @Composable
-private fun ContributingFactorsCard(factors: List<ContributingFactor>) {
+private fun ContributingFactorsCard(factors: List<EventCause>) {
     Card(
         colors = CardDefaults.cardColors(containerColor = MarketCardBlack),
         shape = RoundedCornerShape(12.dp),
@@ -216,7 +237,7 @@ private fun ContributingFactorsCard(factors: List<ContributingFactor>) {
 }
 
 @Composable
-private fun ContributingFactorItem(factor: ContributingFactor) {
+private fun ContributingFactorItem(factor: EventCause) {
     Column {
         // Number circle + title
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -260,14 +281,14 @@ private fun ContributingFactorItem(factor: ContributingFactor) {
                 Box(
                     modifier = Modifier
                         .fillMaxHeight()
-                        .fillMaxWidth(factor.percentage / 100f)
+                        .fillMaxWidth((factor.relevanceScore).toFloat())
                         .clip(RoundedCornerShape(4.dp))
                         .background(MarketGreen)
                 )
             }
             Spacer(modifier = Modifier.width(12.dp))
             Text(
-                text = "${factor.percentage}%",
+                text = String.format("%.0f%%", factor.relevanceScore * 100),
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Bold,
                 color = TextWhite
@@ -278,7 +299,7 @@ private fun ContributingFactorItem(factor: ContributingFactor) {
 
         // Description
         Text(
-            text = factor.description,
+            text = factor.rationale,
             style = MaterialTheme.typography.bodyLarge,
             color = TextMuted
         )
@@ -290,11 +311,13 @@ private fun ContributingFactorItem(factor: ContributingFactor) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.clickable {
-                context.startActivity(Intent(Intent.ACTION_VIEW, factor.sourceUrl.toUri()))
+                // For mock, we don't have direct source URLs in EventCause, 
+                // but we could navigate to the news item URL if needed.
+                // context.startActivity(Intent(Intent.ACTION_VIEW, "https://google.com".toUri()))
             }
         ) {
             Text(
-                text = "Source: ${factor.source}",
+                text = "Source: AI Analysis",
                 style = MaterialTheme.typography.labelMedium,
                 color = MarketGreen
             )

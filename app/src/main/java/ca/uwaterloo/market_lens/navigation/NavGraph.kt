@@ -12,6 +12,8 @@ import ca.uwaterloo.market_lens.ui.auth.LoginScreen
 import ca.uwaterloo.market_lens.ui.auth.SignupScreen
 import ca.uwaterloo.market_lens.ui.ai_event.AIEventScreen
 import ca.uwaterloo.market_lens.ui.alerts.AlertsScreen
+import ca.uwaterloo.market_lens.ui.alerts.AlertsViewModel
+import ca.uwaterloo.market_lens.ui.alerts.CreateAlertScreen
 import ca.uwaterloo.market_lens.ui.events.EventOverviewScreen
 import ca.uwaterloo.market_lens.ui.events.EventsScreen
 import ca.uwaterloo.market_lens.ui.portfolio.PortfolioScreen
@@ -22,6 +24,7 @@ import ca.uwaterloo.market_lens.ui.stock.StockScreen
 fun NavGraph() {
     val navController = rememberNavController()
     val portfolioViewModel : PortfolioViewModel = viewModel()
+    val alertsViewModel : AlertsViewModel = viewModel()
 
     MainScreen(navController = navController) { contentModifier ->
         NavHost(
@@ -32,7 +35,8 @@ fun NavGraph() {
             composable(Routes.LOGIN) { LoginScreen(navController) }
             composable(Routes.SIGNUP) { SignupScreen(navController) }
             composable(Routes.PORTFOLIO) { PortfolioScreen(navController, portfolioViewModel) }
-            composable(Routes.ALERTS) { AlertsScreen() }
+            composable(Routes.ALERTS) { AlertsScreen(alertsViewModel, navController) }
+            composable(Routes.CREATE_ALERT) { CreateAlertScreen(navController, alertsViewModel) }
             composable(
                 Routes.STOCK,
                 arguments = listOf(navArgument("ticker") { type = NavType.StringType })

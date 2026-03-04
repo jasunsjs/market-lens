@@ -15,6 +15,10 @@ import java.util.Locale
 
 data class AlertConfigUiState(
     val alertRules: List<AlertRule> = emptyList(),
+    val portfolioTickers: List<String> = emptyList(),
+    val selectedTicker: String = "",
+    val selectedType: AlertType = AlertType.PRICE_CHANGE,
+    val threshold: Double = 5.0,
     val isLoading: Boolean = false,
     val isSavedFeedbackVisible: Boolean = false
 )
@@ -26,14 +30,55 @@ class AlertsViewModel(
     val uiState = _uiState.asStateFlow()
 
     init {
-        loadAlertRules()
+        loadData()
     }
 
-    private fun loadAlertRules() {
+    fun loadData() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            val rules = model.getAlertRules()
-            _uiState.update { it.copy(alertRules = rules, isLoading = false) }
+            val portfolio = model.getPortfolio()
+            val tickers = portfolio.positions.map { it.tickerKey }
+            val allRules = model.getAlertRules()
+
+            // Filter rules to only show those in portfolio
+            val filteredRules = allRules.filter { it.tickerKey in tickers }
+
+            _uiState.update { it.copy(
+                alertRules = filteredRules,
+                portfolioTickers = tickers,
+                selectedTicker = if (tickers.isNotEmpty()) tickers[0] else "",
+                isLoading = false
+            ) }
+        }
+    }
+
+    fun onTickerSelected(ticker: String) {
+        _uiState.update { it.copy(selectedTicker = ticker) }
+    }
+
+    fun onTypeSelected(type: AlertType) {
+        _uiState.update { it.copy(selectedType = type) }
+    }
+
+    fun onThresholdChanged(threshold: Double) {
+        _uiState.update { it.copy(threshold = threshold) }
+    }
+
+    fun addAlert() {
+        viewModelScope.launch {
+            val state = _uiState.value
+            if (state.selectedTicker.isNotEmpty()) {
+                model.addAlertRule(
+                    tickerKey = state.selectedTicker,
+                    alertType = state.selectedType,
+                    threshold = state.threshold,
+                    enabled = true
+                )
+                _uiState.update { it.copy(isSavedFeedbackVisible = true) }
+                loadData()
+                delay(1200L)
+                _uiState.update { it.copy(isSavedFeedbackVisible = false) }
+            }
         }
     }
 
@@ -41,30 +86,14 @@ class AlertsViewModel(
         viewModelScope.launch {
             val rule = _uiState.value.alertRules.find { it.id == ruleId } ?: return@launch
             model.editAlertRule(rule.copy(enabled = enabled))
-            loadAlertRules()
-        }
-    }
-
-    fun onThresholdChanged(ruleId: String, threshold: Double) {
-        viewModelScope.launch {
-            val rule = _uiState.value.alertRules.find { it.id == ruleId } ?: return@launch
-            model.editAlertRule(rule.copy(threshold = threshold))
-            loadAlertRules()
+            loadData()
         }
     }
 
     fun deleteAlertRule(ruleId: String) {
         viewModelScope.launch {
             model.deleteAlertRule(ruleId)
-            loadAlertRules()
-        }
-    }
-
-    fun saveConfiguration() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isSavedFeedbackVisible = true) }
-            delay(1200L)
-            _uiState.update { it.copy(isSavedFeedbackVisible = false) }
+            loadData()
         }
     }
 }

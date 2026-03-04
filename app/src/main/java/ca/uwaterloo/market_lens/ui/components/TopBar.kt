@@ -2,9 +2,6 @@ package ca.uwaterloo.market_lens.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ShowChart
@@ -24,7 +21,8 @@ import ca.uwaterloo.market_lens.ui.theme.*
 
 @Composable
 fun TopBar(
-    navController: NavController
+    navController: NavController,
+    viewModel: SimulateEventViewModel = viewModel()
 ) {
     Row(
         modifier = Modifier
@@ -59,10 +57,12 @@ fun TopBar(
             )
         }
 
-        // simulate alerts
+        // simulate events
         Button(
             onClick = {
-                navController.navigate(Routes.ALERTS)
+                viewModel.simulateRandomEvent {
+                    navController.navigate(Routes.EVENTS)
+                }
             },
             colors = ButtonDefaults.buttonColors(
                 containerColor = MarketGreen,
@@ -78,7 +78,7 @@ fun TopBar(
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(
-                text = "Simulate Alert",
+                text = "Simulate Event",
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
                 color = Color.Black

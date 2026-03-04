@@ -12,6 +12,8 @@ import androidx.compose.material.icons.automirrored.filled.TrendingDown
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -19,11 +21,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import ca.uwaterloo.market_lens.domain.model.MarketEvent
 import ca.uwaterloo.market_lens.ui.theme.*
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun EventsScreen(navController: NavController, viewModel: EventsViewModel = viewModel()) {
-    val events = viewModel.events
+    val uiState by viewModel.uiState.collectAsState()
 
     Column(
         modifier = Modifier
@@ -43,22 +48,28 @@ fun EventsScreen(navController: NavController, viewModel: EventsViewModel = view
             modifier = Modifier.padding(top = 4.dp, bottom = 24.dp)
         )
 
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(events.values.toList()) { event ->
-                EventCard(
-                    event = event,
-                    onClick = { navController.navigate("event_overview/${event.id}") }
-                )
+        if (uiState.isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = MarketGreen)
+            }
+        } else {
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(uiState.events) { event ->
+                    EventCard(
+                        event = event,
+                        onClick = { navController.navigate("event_overview/${event.id}") }
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun EventCard(event: EventData, onClick: () -> Unit) {
-    val isNegative = event.percentChange < 0
+private fun EventCard(event: MarketEvent, onClick: () -> Unit) {
+    val isNegative = event.percentMove < 0
     val trendColor = if (isNegative) MarketRed else MarketGreen
     val trendIcon =
         if (isNegative) Icons.AutoMirrored.Filled.TrendingDown else Icons.AutoMirrored.Filled.TrendingUp
@@ -78,7 +89,6 @@ private fun EventCard(event: EventData, onClick: () -> Unit) {
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Left: Trend icon
             Box(
                 modifier = Modifier
                     .size(48.dp)
@@ -96,14 +106,13 @@ private fun EventCard(event: EventData, onClick: () -> Unit) {
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // Middle: Event details
             Column(modifier = Modifier.weight(1f)) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = event.ticker,
+                        text = event.tickerKey,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = TextWhite
@@ -113,7 +122,7 @@ private fun EventCard(event: EventData, onClick: () -> Unit) {
                         shape = RoundedCornerShape(4.dp)
                     ) {
                         Text(
-                            text = "${event.percentChange}%",
+                            text = String.format("%.1f%%", event.percentMove),
                             style = MaterialTheme.typography.labelMedium,
                             color = TextWhite,
                             fontWeight = FontWeight.Bold,
@@ -128,14 +137,15 @@ private fun EventCard(event: EventData, onClick: () -> Unit) {
                     modifier = Modifier.padding(top = 4.dp)
                 )
                 Text(
-                    text = event.timestamp,
+                    text = DateTimeFormatter.ofPattern("MMM dd, yyyy - h:mm a")
+                        .withZone(ZoneId.systemDefault())
+                        .format(event.detectedAt),
                     style = MaterialTheme.typography.labelMedium,
                     color = TextMuted,
                     modifier = Modifier.padding(top = 8.dp)
                 )
             }
 
-            // Right: Chevron
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
