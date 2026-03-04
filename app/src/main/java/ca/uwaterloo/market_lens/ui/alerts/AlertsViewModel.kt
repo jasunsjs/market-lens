@@ -2,113 +2,85 @@ package ca.uwaterloo.market_lens.ui.alerts
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import ca.uwaterloo.market_lens.di.AppGraph
+import ca.uwaterloo.market_lens.domain.model.AlertRule
+import ca.uwaterloo.market_lens.domain.model.AlertType
+import ca.uwaterloo.market_lens.domain.service.MarketLensModel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlin.math.round
 import java.util.Locale
 
-class AlertsViewModel : ViewModel() {
-    private val _uiState = MutableStateFlow(AlertConfigUiState())
-    val uiState = _uiState.asStateFlow()
-
-    private val _savedConfiguration = MutableStateFlow<AlertConfiguration?>(null)
-    val savedConfiguration = _savedConfiguration.asStateFlow()
-    private var saveFeedbackJob: Job? = null
-
-    fun onAlertTypeSelected(alertType: AlertType) {
-        _uiState.update { it.copy(alertType = alertType, threshold = DEFAULT_THRESHOLD) }
-    }
-
-    fun onThresholdChanged(value: Float) {
-        _uiState.update { state ->
-            val clamped = value
-                .coerceIn(state.alertType.minThreshold, state.alertType.maxThreshold)
-                .roundToSingleDecimal()
-            state.copy(threshold = clamped)
-        }
-    }
-
-    fun onAlertsEnabledChanged(enabled: Boolean) {
-        _uiState.update { it.copy(alertsEnabled = enabled) }
-    }
-
-    fun saveConfiguration() {
-        val state = _uiState.value
-        _savedConfiguration.value = AlertConfiguration(
-            alertType = state.alertType,
-            threshold = state.threshold,
-            alertsEnabled = state.alertsEnabled
-        )
-        _uiState.update { it.copy(isSavedFeedbackVisible = true) }
-
-        saveFeedbackJob?.cancel()
-        saveFeedbackJob = viewModelScope.launch {
-            delay(SAVE_FEEDBACK_DURATION_MS)
-            _uiState.update { it.copy(isSavedFeedbackVisible = false) }
-        }
-    }
-
-    fun Float.roundToSingleDecimal(): Float {
-        return round(this * 10f) / 10f
-    }
-
-    companion object {
-        private const val DEFAULT_THRESHOLD = 5f
-        private const val SAVE_FEEDBACK_DURATION_MS = 1200L
-    }
-}
-
-enum class AlertType(
-    val label: String,
-    val description: String,
-    val minThreshold: Float,
-    val maxThreshold: Float,
-    val unitFormatter: (Float) -> String
-) {
-    PRICE_CHANGE(
-        label = "Price Change",
-        description = "Get notified when stock price changes significantly",
-        minThreshold = 0f,
-        maxThreshold = 20f,
-        unitFormatter = { value -> "\u00B1${formatThresholdValue(value)}%" }
-    ),
-    VOLUME_SPIKE(
-        label = "Volume Spike",
-        description = "Get notified when trading volume spikes above normal",
-        minThreshold = 0f,
-        maxThreshold = 10f,
-        unitFormatter = { value -> "${formatThresholdValue(value)}x normal" }
-    ),
-    EARNINGS_ANNOUNCEMENT(
-        label = "Earnings Announcement",
-        description = "Get notified about earnings announcements",
-        minThreshold = 0f,
-        maxThreshold = 30f,
-        unitFormatter = { value -> "${formatThresholdValue(value)} days before" }
-    )
-}
-
 data class AlertConfigUiState(
-    val alertType: AlertType = AlertType.PRICE_CHANGE,
-    val threshold: Float = 5f,
-    val alertsEnabled: Boolean = true,
+    val alertRules: List<AlertRule> = emptyList(),
+    val isLoading: Boolean = false,
     val isSavedFeedbackVisible: Boolean = false
 )
 
-data class AlertConfiguration(
-    val alertType: AlertType,
-    val threshold: Float,
-    val alertsEnabled: Boolean
-)
+class AlertsViewModel(
+    private val model: MarketLensModel = AppGraph.model
+) : ViewModel() {
+    private val _uiState = MutableStateFlow(AlertConfigUiState())
+    val uiState = _uiState.asStateFlow()
 
-fun formatThresholdValue(value: Float): String {
-    return if (value % 1f == 0f) {
+    init {
+        loadAlertRules()
+    }
+
+    private fun loadAlertRules() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            val rules = model.getAlertRules()
+            _uiState.update { it.copy(alertRules = rules, isLoading = false) }
+        }
+    }
+
+    fun onAlertEnabledChanged(ruleId: String, enabled: Boolean) {
+        viewModelScope.launch {
+            val rule = _uiState.value.alertRules.find { it.id == ruleId } ?: return@launch
+            model.editAlertRule(rule.copy(enabled = enabled))
+            loadAlertRules()
+        }
+    }
+
+    fun onThresholdChanged(ruleId: String, threshold: Double) {
+        viewModelScope.launch {
+            val rule = _uiState.value.alertRules.find { it.id == ruleId } ?: return@launch
+            model.editAlertRule(rule.copy(threshold = threshold))
+            loadAlertRules()
+        }
+    }
+
+    fun deleteAlertRule(ruleId: String) {
+        viewModelScope.launch {
+            model.deleteAlertRule(ruleId)
+            loadAlertRules()
+        }
+    }
+
+    fun saveConfiguration() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSavedFeedbackVisible = true) }
+            delay(1200L)
+            _uiState.update { it.copy(isSavedFeedbackVisible = false) }
+        }
+    }
+}
+
+fun formatThresholdValue(value: Double): String {
+    return if (value % 1.0 == 0.0) {
         value.toInt().toString()
     } else {
         String.format(Locale.US, "%.1f", value)
+    }
+}
+
+fun formatRuleLabel(type: AlertType, threshold: Double): String {
+    return when (type) {
+        AlertType.PRICE_CHANGE -> "Price Change \u00B1${formatThresholdValue(threshold)}%"
+        AlertType.VOLUME_SPIKE -> "Volume Spike ${formatThresholdValue(threshold)}x"
+        AlertType.EARNINGS_ANNOUNCEMENT -> "Earnings ${formatThresholdValue(threshold)} days before"
     }
 }

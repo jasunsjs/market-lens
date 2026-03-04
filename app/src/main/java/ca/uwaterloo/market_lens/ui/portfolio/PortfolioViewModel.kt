@@ -1,45 +1,84 @@
 package ca.uwaterloo.market_lens.ui.portfolio
 
-import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import ca.uwaterloo.market_lens.di.AppGraph
+import ca.uwaterloo.market_lens.domain.model.PortfolioPosition
+import ca.uwaterloo.market_lens.domain.model.StockQuote
+import ca.uwaterloo.market_lens.domain.service.MarketLensModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-// class holding stock info for each UI element
-data class StockItemInfo(
-    val id: String,
-    val ticker: String,
-    val weight: String
+data class PortfolioUiState(
+    val positions: List<PortfolioPosition> = emptyList(),
+    val quotes: Map<String, StockQuote> = emptyMap(),
+    val totalValue: String = "$0.00",
+    val netChange: String = "+$0.00",
+    val netChangePercent: String = "(+0.00%)",
+    val isLoading: Boolean = false
 )
 
+class PortfolioViewModel(
+    private val model: MarketLensModel = AppGraph.model
+) : ViewModel() {
 
-class PortfolioViewModel : ViewModel() {
-    val stockList = mutableStateListOf<StockItemInfo>()
+    private val _uiState = MutableStateFlow(PortfolioUiState())
+    val uiState: StateFlow<PortfolioUiState> = _uiState.asStateFlow()
 
     init {
-        // Add some initial stocks
-        stockList.addAll(
-            listOf(
-                StockItemInfo(id = "1", ticker = "AAPL", weight = "30"),
-                StockItemInfo(id = "2", ticker = "MSFT", weight = "50"),
-                StockItemInfo(id = "3", ticker = "NVDA", weight = "20"),
+        loadPortfolio()
+    }
+
+    private fun loadPortfolio() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true)
+            val portfolio = model.getPortfolio()
+            val quotes = portfolio.positions.associate { it.tickerKey to model.getQuote(it.tickerKey) }
+
+            var totalVal = 0.0
+            var totalChange = 0.0
+
+            portfolio.positions.forEach { pos ->
+                val quote = quotes[pos.tickerKey]
+                if (quote != null) {
+                    val weight = pos.weight ?: 0.0
+                    // Using weight as shares for simplicity in mock calculations
+                    val posValue = weight * quote.price
+                    totalVal += posValue
+                    totalChange += posValue * (quote.changePercent / 100.0)
+                }
+            }
+
+            val netChangePercent = if (totalVal != totalChange) (totalChange / (totalVal - totalChange)) * 100.0 else 0.0
+
+            _uiState.value = _uiState.value.copy(
+                positions = portfolio.positions,
+                quotes = quotes,
+                totalValue = String.format("$%,.2f", totalVal),
+                netChange = String.format("%s$%,.2f", if (totalChange >= 0) "+" else "-", Math.abs(totalChange)),
+                netChangePercent = String.format("(%s%.2f%%)", if (netChangePercent >= 0) "+" else "", netChangePercent),
+                isLoading = false
             )
-        )
+        }
     }
 
-    fun addStock(stock: StockItemInfo) {
-        stockList.add(stock)
+    fun addStock(ticker: String) {
+        viewModelScope.launch {
+            model.addTickerToPortfolio(ticker)
+            loadPortfolio()
+        }
     }
 
-    fun removeStock(stock: StockItemInfo) {
-        stockList.remove(stock)
+    fun removeStock(ticker: String) {
+        viewModelScope.launch {
+            model.removeTickerFromPortfolio(ticker)
+            loadPortfolio()
+        }
     }
 
-    fun navigateToStockPage(
-        stockItemInfo: StockItemInfo,
-        onSuccess: () -> Unit) {
+    fun navigateToStockPage(ticker: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
             onSuccess()
         }

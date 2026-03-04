@@ -1,4 +1,4 @@
-package ca.uwaterloo.market_lens.data.supabase
+    package ca.uwaterloo.market_lens.data.supabase
 
 import ca.uwaterloo.market_lens.BuildConfig
 import io.github.jan.supabase.createSupabaseClient
