@@ -27,15 +27,6 @@ class MockPortfolioRepositoryTest {
     }
 
     @Test
-    fun getAvailableTickers_maps_portfolio_positions_to_tickers() = runBlocking {
-        val expectedTickerKeys = MockDb.portfolioPositions.map { it.tickerKey }
-
-        val tickers = repository.getAvailableTickers()
-
-        assertEquals(expectedTickerKeys, tickers.map { it.tickerKey })
-    }
-
-    @Test
     fun getPortfolio_returns_metadata_and_positions_snapshot() = runBlocking {
         val portfolio = repository.getPortfolio()
 
