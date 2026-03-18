@@ -13,10 +13,10 @@ interface MarketLensModel {
     // Auth
     val authState: StateFlow<AuthState>
     suspend fun login(email: String, password: String)
+    suspend fun signUp(email: String, password: String)
     suspend fun logout()
 
     // Main View
-    suspend fun getAvailableTickers(): List<Ticker>
     suspend fun getPortfolio(): Portfolio
     suspend fun addTickerToPortfolio(tickerKey: String)
     suspend fun removeTickerFromPortfolio(tickerKey: String)

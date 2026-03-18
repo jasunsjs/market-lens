@@ -28,19 +28,23 @@ class StockViewModel(
 
     fun loadStockData(tickerKey: String) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(ticker = tickerKey, isLoading = true)
-            val quote = model.getQuote(tickerKey)
-            val series = model.getPriceSeries(tickerKey, PriceRange.ONE_MONTH)
-            val news = model.getNewsByTicker(tickerKey)
-            val analysis = model.getStockAnalysis(tickerKey)
+            try {
+                _uiState.value = _uiState.value.copy(ticker = tickerKey, isLoading = true)
+                val quote = model.getQuote(tickerKey)
+                val series = model.getPriceSeries(tickerKey, PriceRange.ONE_MONTH)
+                val news = model.getNewsByTicker(tickerKey)
+                val analysis = model.getStockAnalysis(tickerKey)
 
-            _uiState.value = _uiState.value.copy(
-                quote = quote,
-                priceSeries = series,
-                newsItems = news,
-                analysis = analysis,
-                isLoading = false
-            )
+                _uiState.value = _uiState.value.copy(
+                    quote = quote,
+                    priceSeries = series,
+                    newsItems = news,
+                    analysis = analysis,
+                    isLoading = false
+                )
+            } catch (_: Exception) {
+                _uiState.value = _uiState.value.copy(isLoading = false)
+            }
         }
     }
 

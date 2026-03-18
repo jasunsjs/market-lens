@@ -61,6 +61,16 @@ fun PortfolioScreen(
                 netChangePercent = uiState.netChangePercent
             )
 
+            val errorMessage = uiState.errorMessage
+            if (errorMessage != null) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = errorMessage,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+
             Spacer(modifier = Modifier.height(24.dp))
             AddStockSection(
                 ticker = tickerInput,

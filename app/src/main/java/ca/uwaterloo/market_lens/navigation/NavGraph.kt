@@ -1,6 +1,7 @@
 package ca.uwaterloo.market_lens.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -23,8 +24,6 @@ import ca.uwaterloo.market_lens.ui.stock.StockScreen
 @Composable
 fun NavGraph() {
     val navController = rememberNavController()
-    val portfolioViewModel : PortfolioViewModel = viewModel()
-    val alertsViewModel : AlertsViewModel = viewModel()
 
     MainScreen(navController = navController) { contentModifier ->
         NavHost(
@@ -34,9 +33,21 @@ fun NavGraph() {
         ) {
             composable(Routes.LOGIN) { LoginScreen(navController) }
             composable(Routes.SIGNUP) { SignupScreen(navController) }
-            composable(Routes.PORTFOLIO) { PortfolioScreen(navController, portfolioViewModel) }
-            composable(Routes.ALERTS) { AlertsScreen(alertsViewModel, navController) }
-            composable(Routes.CREATE_ALERT) { CreateAlertScreen(navController, alertsViewModel) }
+            composable(Routes.PORTFOLIO) {
+                val portfolioViewModel: PortfolioViewModel = viewModel()
+                PortfolioScreen(navController, portfolioViewModel)
+            }
+            composable(Routes.ALERTS) {
+                val alertsViewModel: AlertsViewModel = viewModel()
+                AlertsScreen(alertsViewModel, navController)
+            }
+            composable(Routes.CREATE_ALERT) {
+                val alertsBackStackEntry = remember(navController) {
+                    navController.getBackStackEntry(Routes.ALERTS)
+                }
+                val alertsViewModel: AlertsViewModel = viewModel(alertsBackStackEntry)
+                CreateAlertScreen(navController, alertsViewModel)
+            }
             composable(
                 Routes.STOCK,
                 arguments = listOf(navArgument("ticker") { type = NavType.StringType })
