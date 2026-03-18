@@ -31,9 +31,13 @@ class EventsViewModel(
 
     private fun loadEvents() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
-            _allEvents.value = model.getEvents()
-            updateFilteredEvents(SimulationManager.simulatedEventIds.value)
+            try {
+                _uiState.value = _uiState.value.copy(isLoading = true)
+                _allEvents.value = model.getEvents()
+                updateFilteredEvents(SimulationManager.simulatedEventIds.value)
+            } catch (_: Exception) {
+                _uiState.value = _uiState.value.copy(isLoading = false)
+            }
         }
     }
 
@@ -46,16 +50,20 @@ class EventsViewModel(
     }
 
     private suspend fun updateFilteredEvents(simulatedIds: Set<String>) {
-        val portfolio = model.getPortfolio()
-        val portfolioTickers = portfolio.positions.map { it.tickerKey }.toSet()
-        
-        val filteredEvents = _allEvents.value.filter { 
-            it.id in simulatedIds && it.tickerKey in portfolioTickers 
+        try {
+            val portfolio = model.getPortfolio()
+            val portfolioTickers = portfolio.positions.map { it.tickerKey }.toSet()
+
+            val filteredEvents = _allEvents.value.filter {
+                it.id in simulatedIds && it.tickerKey in portfolioTickers
+            }
+
+            _uiState.value = _uiState.value.copy(
+                events = filteredEvents.sortedByDescending { it.detectedAt },
+                isLoading = false
+            )
+        } catch (_: Exception) {
+            _uiState.value = _uiState.value.copy(isLoading = false)
         }
-        
-        _uiState.value = _uiState.value.copy(
-            events = filteredEvents.sortedByDescending { it.detectedAt },
-            isLoading = false
-        )
     }
 }
