@@ -1,17 +1,22 @@
 package ca.uwaterloo.market_lens.di
 
 import ca.uwaterloo.market_lens.data.mock.*
+import ca.uwaterloo.market_lens.data.supabase.SupabaseAlertsRepository
+import ca.uwaterloo.market_lens.data.supabase.SupabaseAuthRepository
+import ca.uwaterloo.market_lens.data.supabase.SupabaseEventsRepository
+import ca.uwaterloo.market_lens.data.supabase.SupabaseExplanationRepository
+import ca.uwaterloo.market_lens.data.supabase.SupabasePortfolioRepository
 import ca.uwaterloo.market_lens.domain.repository.*
 import ca.uwaterloo.market_lens.domain.service.*
 
 object AppGraph {
-    val authRepository: AuthRepository = MockAuthRepository()
-    val portfolioRepository: PortfolioRepository = MockPortfolioRepository()
+    val authRepository: AuthRepository = SupabaseAuthRepository()
+    val portfolioRepository: PortfolioRepository = SupabasePortfolioRepository()
     val marketDataRepository: MarketDataRepository = MockMarketDataRepository()
-    val eventsRepository: EventsRepository = MockEventsRepository()
-    val alertsRepository: AlertsRepository = MockAlertsRepository()
+    val eventsRepository: EventsRepository = SupabaseEventsRepository()
+    val alertsRepository: AlertsRepository = SupabaseAlertsRepository()
     val newsRepository: NewsRepository = MockNewsRepository()
-    val explanationRepository: ExplanationRepository = MockExplanationRepository()
+    val explanationRepository: ExplanationRepository = SupabaseExplanationRepository()
 
 
     // Central domain model
