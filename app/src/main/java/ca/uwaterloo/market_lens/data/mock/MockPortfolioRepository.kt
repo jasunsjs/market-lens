@@ -6,9 +6,6 @@ import ca.uwaterloo.market_lens.domain.model.Ticker
 import ca.uwaterloo.market_lens.domain.repository.PortfolioRepository
 
 class MockPortfolioRepository : PortfolioRepository {
-    override suspend fun getAvailableTickers(): List<Ticker> =
-        MockDb.quotes.keys.map { Ticker(it) }
-
     override suspend fun getPortfolio(): Portfolio =
         Portfolio(
             id = "mock-portfolio-1",

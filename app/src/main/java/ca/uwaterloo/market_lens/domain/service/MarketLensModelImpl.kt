@@ -34,9 +34,6 @@ class MarketLensModelImpl(
         _authState.value = AuthState.SignedOut
     }
 
-    override suspend fun getAvailableTickers(): List<Ticker> =
-        portfolioRepository.getAvailableTickers()
-
     override suspend fun getPortfolio(): Portfolio =
         portfolioRepository.getPortfolio()
 
