@@ -21,7 +21,7 @@ fun LoginScreen(
         isLoading = isLoading,
         errorMessage = errorMessage,
         onPrimaryClick = { email, password ->
-            viewModel.submit(email, password) {
+            viewModel.login(email, password) {
                 navController.navigate(Routes.PORTFOLIO) {
                     popUpTo(Routes.LOGIN) { inclusive = true }
                 }
