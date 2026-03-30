@@ -28,8 +28,14 @@ class AuthViewModel(
             _isLoading.value = true
             _error.value = null
 
-            model.login(email, password)
-            handleAuthResult(onSuccess)
+            try {
+                model.login(email, password)
+                handleAuthResult(onSuccess)
+            } catch (e: Exception) {
+                _error.value = mapErrorToMessage(e.message ?: "")
+            } finally {
+                _isLoading.value = false
+            }
         }
     }
 
@@ -39,22 +45,46 @@ class AuthViewModel(
             return
         }
 
+        if (password.length < 6) {
+            _error.value = "Password must be at least 6 characters"
+            return
+        }
+
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
 
-            model.signUp(email, password)
-            handleAuthResult(onSuccess)
+            try {
+                model.signUp(email, password)
+                handleAuthResult(onSuccess)
+            } catch (e: Exception) {
+                _error.value = mapErrorToMessage(e.message ?: "")
+            } finally {
+                _isLoading.value = false
+            }
         }
     }
 
     private fun handleAuthResult(onSuccess: () -> Unit) {
         when (val authState = model.authState.value) {
             is AuthState.SignedIn -> onSuccess()
-            is AuthState.Error -> _error.value = authState.message
-            else -> _error.value = "Authentication failed"
+            is AuthState.Error -> _error.value = mapErrorToMessage(authState.message)
+            else -> {} // Initial or Loading handled elsewhere
         }
+    }
 
-        _isLoading.value = false
+    private fun mapErrorToMessage(rawError: String): String {
+        return when {
+            rawError.contains("invalid login credentials", ignoreCase = true) -> 
+                "Invalid email or password. Please try again."
+            rawError.contains("user already exists", ignoreCase = true) -> 
+                "An account with this email already exists."
+            rawError.contains("network", ignoreCase = true) -> 
+                "Network error. Please check your internet connection."
+            rawError.contains("email not confirmed", ignoreCase = true) ->
+                "Please confirm your email address before logging in."
+            rawError.isBlank() -> "An unexpected error occurred. Please try again."
+            else -> rawError // Fallback to raw error if it's already somewhat friendly
+        }
     }
 }
