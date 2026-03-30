@@ -2,7 +2,9 @@ package ca.uwaterloo.market_lens.ui.events
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -12,6 +14,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.util.Log
 import androidx.core.content.ContextCompat
+import ca.uwaterloo.market_lens.app.MainActivity
 
 object NotificationHelper {
     private const val CHANNEL_ID = "market_events_channel"
@@ -52,11 +55,26 @@ object NotificationHelper {
             return
         }
 
+        // Intent is used to nav alert to event page
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            putExtra("eventId", event.id)
+        }
+
+        // Attach a pending intent to the notification for navigation
+        val pendingIntent: PendingIntent = PendingIntent.getActivity(
+            context, 
+            event.id.hashCode(), 
+            intent, 
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle("ALERT: ${event.tickerKey} moved ${event.percentMove}%.")
             .setContentText(event.briefDescription)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setContentIntent(pendingIntent)
             .setAutoCancel(true)
 
         try {

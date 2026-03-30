@@ -33,4 +33,8 @@ object SimulationManager {
         val success = _latestTriggeredEvent.tryEmit(event)
         Log.d(TAG, "Event emission success: $success")
     }
+
+    fun registerEventId(eventId: String) {
+        _simulatedEventIds.update { it + eventId }
+    }
 }
