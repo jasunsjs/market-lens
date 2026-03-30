@@ -60,9 +60,7 @@ fun TopBar(
         // simulate events
         Button(
             onClick = {
-                viewModel.simulateRandomEvent {
-                    navController.navigate(Routes.EVENTS)
-                }
+                viewModel.simulateRandomEvent();
             },
             colors = ButtonDefaults.buttonColors(
                 containerColor = MarketGreen,

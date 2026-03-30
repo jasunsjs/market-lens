@@ -13,7 +13,7 @@ object AppGraph {
     val authRepository: AuthRepository = SupabaseAuthRepository()
     val portfolioRepository: PortfolioRepository = SupabasePortfolioRepository()
     val marketDataRepository: MarketDataRepository = MockMarketDataRepository()
-    val eventsRepository: EventsRepository = SupabaseEventsRepository()
+    val eventsRepository: EventsRepository = MockEventsRepository()
     val alertsRepository: AlertsRepository = SupabaseAlertsRepository()
     val newsRepository: NewsRepository = MockNewsRepository()
     val explanationRepository: ExplanationRepository = SupabaseExplanationRepository()

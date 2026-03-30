@@ -11,7 +11,7 @@ class SimulateEventViewModel(
     private val model: MarketLensModel = AppGraph.model
 ) : ViewModel() {
 
-    fun simulateRandomEvent(onComplete: () -> Unit) {
+    fun simulateRandomEvent() {
         viewModelScope.launch {
             try {
                 val portfolio = model.getPortfolio()
@@ -28,12 +28,10 @@ class SimulateEventViewModel(
 
                 if (availableEvents.isNotEmpty()) {
                     val nextEvent = availableEvents.random()
-                    SimulationManager.triggerEvent(nextEvent.id)
+                    SimulationManager.triggerEvent(nextEvent)
                 }
             } catch (_: Exception) {
             }
-
-            onComplete()
         }
     }
 }

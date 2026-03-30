@@ -7,6 +7,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.ui.graphics.toArgb
 import ca.uwaterloo.market_lens.navigation.NavGraph
+import ca.uwaterloo.market_lens.ui.events.NotificationHelper
 import ca.uwaterloo.market_lens.ui.theme.MarketBarBlack
 import ca.uwaterloo.market_lens.ui.theme.MarketLensTheme
 
@@ -16,6 +17,9 @@ class MainActivity : ComponentActivity() {
             statusBarStyle = SystemBarStyle.dark(MarketBarBlack.toArgb())
         )
         super.onCreate(savedInstanceState)
+        
+        NotificationHelper.createNotificationChannel(this)
+
         setContent {
             MarketLensTheme {
                 NavGraph()
