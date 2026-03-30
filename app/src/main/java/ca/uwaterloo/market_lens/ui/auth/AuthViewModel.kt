@@ -28,13 +28,15 @@ class AuthViewModel(
             _isLoading.value = true
             _error.value = null
 
-            try {
-                model.login(email, password)
-                handleAuthResult(onSuccess)
-            } catch (e: Exception) {
-                _error.value = mapErrorToMessage(e.message ?: "")
-            } finally {
-                _isLoading.value = false
+            // Capture the returned AuthState
+            val result = model.login(email, password)
+
+            _isLoading.value = false // Stop loading before handling the result
+
+            when (result) {
+                is AuthState.SignedIn -> onSuccess()
+                is AuthState.Error -> _error.value = mapErrorToMessage(result.message)
+                else -> { /* Optional: Handle unexpected states */ }
             }
         }
     }
@@ -54,37 +56,31 @@ class AuthViewModel(
             _isLoading.value = true
             _error.value = null
 
-            try {
-                model.signUp(email, password)
-                handleAuthResult(onSuccess)
-            } catch (e: Exception) {
-                _error.value = mapErrorToMessage(e.message ?: "")
-            } finally {
-                _isLoading.value = false
-            }
-        }
-    }
+            // Capture the returned AuthState directly
+            val result = model.signUp(email, password)
 
-    private fun handleAuthResult(onSuccess: () -> Unit) {
-        when (val authState = model.authState.value) {
-            is AuthState.SignedIn -> onSuccess()
-            is AuthState.Error -> _error.value = mapErrorToMessage(authState.message)
-            else -> {} // Initial or Loading handled elsewhere
+            _isLoading.value = false
+
+            when (result) {
+                is AuthState.SignedIn -> onSuccess()
+                is AuthState.Error -> _error.value = mapErrorToMessage(result.message)
+                else -> { /* Optional: Handle unexpected states */ }
+            }
         }
     }
 
     private fun mapErrorToMessage(rawError: String): String {
         return when {
-            rawError.contains("invalid login credentials", ignoreCase = true) -> 
+            rawError.contains("invalid login credentials", ignoreCase = true) ->
                 "Invalid email or password. Please try again."
-            rawError.contains("user already exists", ignoreCase = true) -> 
+            rawError.contains("user already exists", ignoreCase = true) ->
                 "An account with this email already exists."
-            rawError.contains("network", ignoreCase = true) -> 
+            rawError.contains("network", ignoreCase = true) ->
                 "Network error. Please check your internet connection."
             rawError.contains("email not confirmed", ignoreCase = true) ->
                 "Please confirm your email address before logging in."
             rawError.isBlank() -> "An unexpected error occurred. Please try again."
-            else -> rawError // Fallback to raw error if it's already somewhat friendly
+            else -> rawError
         }
     }
 }

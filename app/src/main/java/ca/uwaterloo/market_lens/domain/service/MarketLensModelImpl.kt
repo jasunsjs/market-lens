@@ -33,14 +33,18 @@ class MarketLensModelImpl(
         }
     }
 
-    override suspend fun login(email: String, password: String) {
+    override suspend fun login(email: String, password: String): AuthState {
         _authState.value = AuthState.Loading
-        _authState.value = authRepository.login(email, password)
+        val result = authRepository.login(email, password)
+        _authState.value = result
+        return result
     }
 
-    override suspend fun signUp(email: String, password: String) {
+    override suspend fun signUp(email: String, password: String): AuthState {
         _authState.value = AuthState.Loading
-        _authState.value = authRepository.signUp(email, password)
+        val result = authRepository.signUp(email, password)
+        _authState.value = result
+        return result
     }
 
     override suspend fun logout() {
