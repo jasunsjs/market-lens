@@ -1,8 +1,11 @@
 package ca.uwaterloo.market_lens.data.supabase
 
+import android.util.Log
+import ca.uwaterloo.market_lens.domain.model.AiExplanation
 import ca.uwaterloo.market_lens.domain.model.EventCause
 import ca.uwaterloo.market_lens.domain.model.EventType
 import ca.uwaterloo.market_lens.domain.model.MarketEvent
+import ca.uwaterloo.market_lens.domain.model.Sentiment
 import ca.uwaterloo.market_lens.domain.repository.EventsRepository
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Order
@@ -11,16 +14,27 @@ import kotlinx.serialization.Serializable
 
 class SupabaseEventsRepository : EventsRepository {
     private val client = SupabaseClientProvider.client
+    private val TAG = "SupabaseEventsRepo"
 
-    override suspend fun getEvents(): List<MarketEvent> =
-        client.from("market_events")
+    override suspend fun getEvents(): List<MarketEvent> = try {
+        Log.d(TAG, "Querying market_events table...")
+        val response = client.from("market_events")
             .select {
                 order("detected_at", Order.DESCENDING)
             }
-            .decodeList<MarketEventRow>()
-            .map { it.toDomain() }
+        
+        Log.d(TAG, "Raw response body: ${response.data}")
 
-    override suspend fun getEventById(eventId: String): MarketEvent =
+        val events = response.decodeList<MarketEventRow>()
+        Log.d(TAG, "Successfully decoded ${events.size} events")
+        events.map { it.toDomain() }
+    } catch (e: Exception) {
+        Log.e(TAG, "Error fetching events from Supabase", e)
+        emptyList()
+    }
+
+    override suspend fun getEventById(eventId: String): MarketEvent = try {
+        Log.d(TAG, "Fetching event by id: $eventId")
         client.from("market_events")
             .select {
                 filter {
@@ -31,17 +45,45 @@ class SupabaseEventsRepository : EventsRepository {
             .decodeSingleOrNull<MarketEventRow>()
             ?.toDomain()
             ?: throw NoSuchElementException("No event for $eventId")
+    } catch (e: Exception) {
+        Log.e(TAG, "Error fetching event $eventId", e)
+        throw e
+    }
 
-    override suspend fun getEventCauses(eventId: String): List<EventCause> =
-        client.from("event_causes")
+    override suspend fun getEventCauses(eventId: String): List<EventCause> = try {
+        Log.d(TAG, "Fetching event causes for event: $eventId")
+        val response = client.from("event_causes")
             .select {
                 filter {
                     eq("event_id", eventId)
                 }
                 order("rank", Order.ASCENDING)
             }
-            .decodeList<EventCauseRow>()
+        
+        Log.d(TAG, "Event causes raw data: ${response.data}")
+        
+        response.decodeList<EventCauseRow>()
             .map { it.toDomain() }
+    } catch (e: Exception) {
+        Log.e(TAG, "Error fetching event causes", e)
+        emptyList()
+    }
+
+    override suspend fun getEventExplanation(eventId: String): AiExplanation? = try {
+        Log.d(TAG, "Fetching AI explanation from DB for eventId: $eventId")
+        client.from("ai_explanations")
+            .select {
+                filter {
+                    eq("event_id", eventId)
+                }
+                limit(1)
+            }
+            .decodeSingleOrNull<AiExplanationRow>()
+            ?.toDomain()
+    } catch (e: Exception) {
+        Log.e(TAG, "Error fetching AI explanation for $eventId", e)
+        null
+    }
 }
 
 @Serializable
@@ -56,7 +98,7 @@ private data class MarketEventRow(
     @SerialName("start_time")
     val startTime: String,
     @SerialName("detected_at")
-    val detectedAt: String,
+    val detectedAt: String? = null,
     @SerialName("price_before")
     val priceBefore: Double,
     @SerialName("price_after")
@@ -67,11 +109,16 @@ private data class MarketEventRow(
     fun toDomain(): MarketEvent =
         MarketEvent(
             id = id,
-            tickerKey = tickerKey,
-            eventType = EventType.valueOf(eventType),
+            tickerKey = tickerKey.uppercase(),
+            eventType = try {
+                EventType.valueOf(eventType.uppercase())
+            } catch (e: Exception) {
+                Log.w("MarketEventRow", "Unknown event type: $eventType, defaulting to PRICE_SPIKE_UP")
+                EventType.PRICE_SPIKE_UP
+            },
             percentMove = percentMove,
             startTime = parseInstant(startTime),
-            detectedAt = parseInstant(detectedAt),
+            detectedAt = parseInstant(detectedAt ?: startTime),
             priceBefore = priceBefore,
             priceAfter = priceAfter,
             briefDescription = briefDescription
@@ -84,8 +131,8 @@ private data class EventCauseRow(
     @SerialName("event_id")
     val eventId: String,
     @SerialName("news_item_id")
-    val newsItemId: String,
-    val url: String,
+    val newsItemId: String? = null,
+    val url: String? = null,
     val rank: Int,
     val title: String,
     @SerialName("relevance_score")
@@ -95,10 +142,11 @@ private data class EventCauseRow(
     fun toDomain(): EventCause =
         EventCause(
             eventId = eventId,
-            newsItemId = newsItemId,
+            newsItemId = newsItemId ?: "",
             rank = rank,
             title = title,
             relevanceScore = relevanceScore,
-            rationale = rationale
+            rationale = rationale,
+            url = url // Mapped correctly now
         )
 }

@@ -1,10 +1,12 @@
 package ca.uwaterloo.market_lens.data.finnhub
 
+import android.util.Log
 import ca.uwaterloo.market_lens.BuildConfig
 import ca.uwaterloo.market_lens.domain.model.*
 import ca.uwaterloo.market_lens.domain.repository.MarketDataRepository
 import io.ktor.client.call.*
 import io.ktor.client.request.*
+import io.ktor.client.statement.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.time.Instant
@@ -14,45 +16,61 @@ private const val MASSIVE_BASE_URL = "https://api.massive.com"
 
 class FinnhubMarketDataRepository : MarketDataRepository {
 
+    private val TAG = "FinnhubRepo"
     private val apiKey get() = BuildConfig.FINNHUB_API_KEY
     private val http = FinnhubClient.http
 
     override suspend fun getQuote(tickerKey: String): StockQuote {
-        val quote = http.get("${FinnhubClient.BASE_URL}/quote") {
-            parameter("symbol", tickerKey)
-            parameter("token", apiKey)
-        }.body<FinnhubQuoteResponse>()
-
-        val profile = runCatching {
-            http.get("${FinnhubClient.BASE_URL}/stock/profile2") {
+        return try {
+            Log.d(TAG, "Fetching quote for $tickerKey")
+            val response = http.get("${FinnhubClient.BASE_URL}/quote") {
                 parameter("symbol", tickerKey)
                 parameter("token", apiKey)
-            }.body<FinnhubProfileResponse>()
-        }.getOrNull()
+            }
 
-        val metrics = runCatching {
-            http.get("${FinnhubClient.BASE_URL}/stock/metric") {
-                parameter("symbol", tickerKey)
-                parameter("metric", "all")
-                parameter("token", apiKey)
-            }.body<FinnhubMetricsResponse>()
-        }.getOrNull()
+            if (!response.status.value.toString().startsWith("2")) {
+                Log.e(TAG, "Finnhub API error for $tickerKey: ${response.status} - ${response.bodyAsText()}")
+            }
 
-        // marketCapitalization is in millions of dollars
-        val marketCap = profile?.marketCapitalization?.let { (it * 1_000_000).toLong() }
-        // 10DayAverageTradingVolume is in millions of shares
-        val volume = metrics?.metric?.tenDayAverageTradingVolume?.let { (it * 1_000_000).toLong() }
-        val peRatio = metrics?.metric?.peRatio
+            val quote = response.body<FinnhubQuoteResponse>()
+            Log.d(TAG, "Received quote for $tickerKey: Price=${quote.currentPrice}, Change=${quote.percentChange}")
 
-        return StockQuote(
-            tickerKey = tickerKey,
-            price = quote.currentPrice,
-            changePercent = quote.percentChange,
-            asOf = if (quote.timestamp > 0) Instant.ofEpochSecond(quote.timestamp) else Instant.now(),
-            volume = volume,
-            marketCap = marketCap,
-            peRatio = peRatio
-        )
+            val profile = runCatching {
+                http.get("${FinnhubClient.BASE_URL}/stock/profile2") {
+                    parameter("symbol", tickerKey)
+                    parameter("token", apiKey)
+                }.body<FinnhubProfileResponse>()
+            }.getOrNull()
+
+            val metrics = runCatching {
+                http.get("${FinnhubClient.BASE_URL}/stock/metric") {
+                    parameter("symbol", tickerKey)
+                    parameter("metric", "all")
+                    parameter("token", apiKey)
+                }.body<FinnhubMetricsResponse>()
+            }.getOrNull()
+
+            // marketCapitalization is in millions of dollars
+            val marketCap = profile?.marketCapitalization?.let { (it * 1_000_000).toLong() }
+            // 10DayAverageTradingVolume is in millions of shares
+            val volume = metrics?.metric?.tenDayAverageTradingVolume?.let { (it * 1_000_000).toLong() }
+            val peRatio = metrics?.metric?.peRatio
+
+            StockQuote(
+                tickerKey = tickerKey,
+                price = quote.currentPrice,
+                changePercent = quote.percentChange,
+                asOf = if (quote.timestamp > 0) Instant.ofEpochSecond(quote.timestamp) else Instant.now(),
+                volume = volume,
+                marketCap = marketCap,
+                peRatio = peRatio,
+                logoUrl = profile?.logo // Finnhub returns logo URL here
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to get quote for $tickerKey", e)
+            // Return a placeholder so the app doesn't crash, but Logcat will show the error
+            StockQuote(tickerKey, 0.0, 0.0, Instant.now())
+        }
     }
 
     override suspend fun getPriceSeries(tickerKey: String, range: PriceRange): PriceSeries {
@@ -98,6 +116,7 @@ private data class FinnhubQuoteResponse(
 @Serializable
 private data class FinnhubProfileResponse(
     @SerialName("marketCapitalization") val marketCapitalization: Double? = null,
+    @SerialName("logo") val logo: String? = null
 )
 
 @Serializable

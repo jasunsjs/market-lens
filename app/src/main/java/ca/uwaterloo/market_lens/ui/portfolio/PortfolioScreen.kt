@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -28,6 +29,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import ca.uwaterloo.market_lens.navigation.Routes
 import ca.uwaterloo.market_lens.ui.theme.*
+import coil.compose.AsyncImage
 
 @Composable
 fun PortfolioScreen(
@@ -127,6 +129,7 @@ fun PortfolioScreen(
                             avgCost = position.avgCost,
                             price = if (quote != null) String.format("$%,.2f", quote.price) else "...",
                             change = if (quote != null) quote.changePercent else null,
+                            logoUrl = quote?.logoUrl,
                             holdingValue = holdingValue,
                             unrealizedGain = unrealizedGain,
                             unrealizedGainPercent = unrealizedGainPercent,
@@ -194,10 +197,8 @@ fun EditSharesDialog(
         },
         confirmButton = {
             TextButton(onClick = {
-                val shares = sharesInput.toDoubleOrNull()
-                if (shares != null && shares >= 0) {
-                    onConfirm(shares, avgCostInput.toDoubleOrNull())
-                }
+                val shares = sharesInput.toDoubleOrNull() ?: 0.0
+                onConfirm(shares, avgCostInput.toDoubleOrNull())
             }) {
                 Text("Save", color = MarketGreen)
             }
@@ -311,6 +312,7 @@ fun StockCard(
     avgCost: Double?,
     price: String,
     change: Double?,
+    logoUrl: String?,
     holdingValue: Double?,
     unrealizedGain: Double?,
     unrealizedGainPercent: Double?,
@@ -339,7 +341,16 @@ fun StockCard(
                 modifier = Modifier.size(48.dp).clip(RoundedCornerShape(8.dp)).background(MarketDarkGray),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = ticker, color = MarketGreen, fontWeight = FontWeight.Bold)
+                if (logoUrl != null && logoUrl.isNotEmpty()) {
+                    AsyncImage(
+                        model = logoUrl,
+                        contentDescription = "$ticker logo",
+                        modifier = Modifier.fillMaxSize().padding(4.dp),
+                        contentScale = ContentScale.Fit
+                    )
+                } else {
+                    Text(text = ticker, color = MarketGreen, fontWeight = FontWeight.Bold)
+                }
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -357,7 +368,14 @@ fun StockCard(
                         style = MaterialTheme.typography.bodySmall,
                         color = TextMuted
                     )
+                } else if (shares == null || shares == 0.0) {
+                    Text(
+                        text = "No shares recorded",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextMuted
+                    )
                 }
+                
                 if (unrealizedGain != null) {
                     val gainColor = if (unrealizedGain >= 0) MarketGreen else MarketRed
                     val gainPrefix = if (unrealizedGain >= 0) "+" else ""
@@ -370,7 +388,7 @@ fun StockCard(
                 }
             }
             IconButton(onClick = onEdit) {
-                Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit position", tint = TextMuted)
+                Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit position", tint = MarketGreen)
             }
             IconButton(onClick = onDelete) {
                 Icon(imageVector = Icons.Default.Close, contentDescription = "Delete", tint = MarketRed)

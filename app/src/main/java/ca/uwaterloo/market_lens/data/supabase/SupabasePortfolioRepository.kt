@@ -3,7 +3,6 @@ package ca.uwaterloo.market_lens.data.supabase
 import ca.uwaterloo.market_lens.domain.model.Portfolio
 import ca.uwaterloo.market_lens.domain.model.PortfolioPosition
 import ca.uwaterloo.market_lens.domain.repository.PortfolioRepository
-import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.serialization.SerialName
@@ -21,14 +20,15 @@ class SupabasePortfolioRepository : PortfolioRepository {
                 positions = emptyList()
             )
 
-        val positions = client.from("portfolio_positions")
+        val response = client.from("portfolio_positions")
             .select {
                 filter {
                     eq("portfolio_id", portfolio.id)
                 }
                 order("added_at", Order.ASCENDING)
             }
-            .decodeList<PortfolioPositionRow>()
+        
+        val positions = response.decodeList<PortfolioPositionRow>()
             .map { it.toDomain() }
 
         return portfolio.toDomain(positions)
@@ -38,7 +38,7 @@ class SupabasePortfolioRepository : PortfolioRepository {
         val portfolio = ensurePortfolioForCurrentUser()
 
         client.from("portfolio_positions").upsert(
-            PortfolioPositionInsert(portfolioId = portfolio.id, tickerKey = tickerKey)
+            PortfolioPositionInsert(portfolioId = portfolio.id, tickerKey = tickerKey.uppercase())
         ) {
             onConflict = "portfolio_id,ticker_key"
             ignoreDuplicates = true
@@ -51,7 +51,7 @@ class SupabasePortfolioRepository : PortfolioRepository {
         client.from("portfolio_positions").delete {
             filter {
                 eq("portfolio_id", portfolio.id)
-                eq("ticker_key", tickerKey)
+                eq("ticker_key", tickerKey.uppercase())
             }
         }
     }
@@ -59,12 +59,13 @@ class SupabasePortfolioRepository : PortfolioRepository {
     override suspend fun updateShares(tickerKey: String, shares: Double, avgCost: Double?) {
         val portfolio = ensurePortfolioForCurrentUser()
 
+        // Important: Supabase column is 'weight' but we use it for shares count
         client.from("portfolio_positions").update(
             mapOf("weight" to shares, "avg_cost" to avgCost)
         ) {
             filter {
                 eq("portfolio_id", portfolio.id)
-                eq("ticker_key", tickerKey)
+                eq("ticker_key", tickerKey.uppercase())
             }
         }
     }
@@ -72,12 +73,14 @@ class SupabasePortfolioRepository : PortfolioRepository {
     private suspend fun ensurePortfolioForCurrentUser(): PortfolioRow {
         val userId = client.requireCurrentUserId()
 
-        return findPortfolioForCurrentUser(userId)
-            ?: client.from("portfolios")
-                .insert(PortfolioInsert(ownerUserId = userId)) {
-                    select()
-                }
-                .decodeSingle<PortfolioRow>()
+        val existing = findPortfolioForCurrentUser(userId)
+        if (existing != null) return existing
+
+        return client.from("portfolios")
+            .insert(PortfolioInsert(ownerUserId = userId)) {
+                select()
+            }
+            .decodeSingle<PortfolioRow>()
     }
 
     private suspend fun findPortfolioForCurrentUser(userId: String): PortfolioRow? {
@@ -130,7 +133,7 @@ private data class PortfolioPositionRow(
 ) {
     fun toDomain(): PortfolioPosition =
         PortfolioPosition(
-            tickerKey = tickerKey,
+            tickerKey = tickerKey.uppercase(),
             shares = weight,
             avgCost = avgCost
         )

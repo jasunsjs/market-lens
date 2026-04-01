@@ -9,5 +9,6 @@ data class StockQuote(
     val asOf: Instant,
     val volume: Long? = null,
     val marketCap: Long? = null,
-    val peRatio: Double? = null
+    val peRatio: Double? = null,
+    val logoUrl: String? = null
 )

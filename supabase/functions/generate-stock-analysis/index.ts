@@ -19,15 +19,91 @@ serve(async (req) => {
   }
 
   try {
-    const { ticker } = await req.json()
+    const { ticker, eventId } = await req.json()
+
+    const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!)
+
+    // If eventId is provided, we are generating an AI Explanation for a specific Market Event
+    if (eventId) {
+      console.log(`Generating explanation for event: ${eventId}`)
+
+      // 1. Fetch event details
+      const { data: event, error: eventErr } = await supabase
+        .from('market_events')
+        .select('*')
+        .eq('id', eventId)
+        .single()
+
+      if (eventErr || !event) throw new Error('Event not found')
+
+      // 2. Fetch associated news causes
+      const { data: causes, error: causesErr } = await supabase
+        .from('event_causes')
+        .select('*')
+        .eq('event_id', eventId)
+        .order('rank', { ascending: true })
+
+      const causesContext = (causes || []).map(c => `- ${c.title}: ${c.rationale}`).join('\n')
+
+      const prompt = `You are a financial analyst explaining a specific market event.
+
+Ticker: ${event.ticker_key}
+Event: ${event.event_type} (${event.percent_move}%)
+Description: ${event.brief_description}
+
+Key Causes Identified:
+${causesContext}
+
+Provide a detailed explanation of this event.
+Return a JSON object ONLY with this exact structure:
+{
+  "summary": "2-3 sentence overview of the event",
+  "bullets": ["Key point 1", "Key point 2", "Key point 3"],
+  "sentiment": "BULLISH|BEARISH|NEUTRAL",
+  "confidence": 0.95
+}`
+
+      const geminiRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { response_mime_type: 'application/json' },
+          }),
+        }
+      )
+
+      const geminiData = await geminiRes.json()
+      const rawText = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text
+      if (!rawText) throw new Error('Empty response from Gemini')
+      const explanation = JSON.parse(rawText)
+
+      const { data: saved, error: saveError } = await supabase
+        .from('ai_explanations')
+        .upsert({
+          event_id: eventId,
+          summary: explanation.summary,
+          bullets: explanation.bullets,
+          sentiment: explanation.sentiment,
+          confidence: explanation.confidence,
+          generated_at: new Date().toISOString(),
+        })
+        .select()
+        .single()
+
+      if (saveError) throw saveError
+      return new Response(JSON.stringify(saved), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
+    // Otherwise, generate a general Stock Analysis
     if (!ticker) {
-      return new Response(JSON.stringify({ error: 'ticker is required' }), {
+      return new Response(JSON.stringify({ error: 'ticker or eventId is required' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
       })
     }
-
-    const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!)
 
     // Check for a fresh analysis (generated within STALE_THRESHOLD_HOURS)
     const staleThreshold = new Date(Date.now() - STALE_THRESHOLD_HOURS * 3600 * 1000).toISOString()
@@ -83,11 +159,11 @@ Write a concise 2–3 paragraph analysis covering:
 2. Recent price action and performance context
 3. Key themes from the news that investors should monitor
 
-Return a JSON object ONLY with this exact structure (no markdown, no code fences):
+Return a JSON object ONLY with this exact structure:
 {"summary":"<full analysis text>","sentiment":"BULLISH|BEARISH|NEUTRAL|MIXED","confidence":<0.0 to 1.0>}`
 
     const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -99,8 +175,6 @@ Return a JSON object ONLY with this exact structure (no markdown, no code fences
     )
 
     const geminiData = await geminiRes.json()
-    console.log('Gemini status:', geminiRes.status)
-    console.log('Gemini response:', JSON.stringify(geminiData))
     const rawText = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text
     if (!rawText) throw new Error('Empty response from Gemini')
 

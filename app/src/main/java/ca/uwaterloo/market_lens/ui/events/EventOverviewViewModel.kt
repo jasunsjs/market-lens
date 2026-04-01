@@ -1,5 +1,6 @@
 package ca.uwaterloo.market_lens.ui.events
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ca.uwaterloo.market_lens.di.AppGraph
@@ -26,21 +27,35 @@ class EventOverviewViewModel(
 
     fun loadEventDetail(eventId: String) {
         viewModelScope.launch {
-            try {
-                _uiState.value = _uiState.value.copy(isLoading = true)
-                val event = model.getEventById(eventId)
-                val causes = model.getEventCauses(eventId)
-                val explanation = model.getExplanation(eventId)
+            _uiState.value = _uiState.value.copy(isLoading = true)
+            Log.d("EventOverviewVM", "Loading details for event: $eventId")
 
-                _uiState.value = _uiState.value.copy(
-                    event = event,
-                    causes = causes,
-                    explanation = explanation,
-                    isLoading = false
-                )
-            } catch (_: Exception) {
-                _uiState.value = _uiState.value.copy(isLoading = false)
+            // Load event info
+            try {
+                val event = model.getEventById(eventId)
+                _uiState.value = _uiState.value.copy(event = event)
+            } catch (e: Exception) {
+                Log.e("EventOverviewVM", "Failed to load event basic info", e)
             }
+
+            // Load causes
+            try {
+                val causes = model.getEventCauses(eventId)
+                _uiState.value = _uiState.value.copy(causes = causes)
+            } catch (e: Exception) {
+                Log.e("EventOverviewVM", "Failed to load event causes", e)
+            }
+
+            // Load explanation
+            try {
+                val explanation = model.getExplanation(eventId)
+                Log.d("EventOverviewVM", "Loaded explanation summary: ${explanation.summary.take(20)}...")
+                _uiState.value = _uiState.value.copy(explanation = explanation)
+            } catch (e: Exception) {
+                Log.e("EventOverviewVM", "Failed to load explanation", e)
+            }
+
+            _uiState.value = _uiState.value.copy(isLoading = false)
         }
     }
 }
