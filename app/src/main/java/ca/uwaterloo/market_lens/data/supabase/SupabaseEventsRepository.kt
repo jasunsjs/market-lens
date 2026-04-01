@@ -1,5 +1,6 @@
 package ca.uwaterloo.market_lens.data.supabase
 
+import android.util.Log
 import ca.uwaterloo.market_lens.domain.model.EventCause
 import ca.uwaterloo.market_lens.domain.model.EventType
 import ca.uwaterloo.market_lens.domain.model.MarketEvent
@@ -11,14 +12,19 @@ import kotlinx.serialization.Serializable
 
 class SupabaseEventsRepository : EventsRepository {
     private val client = SupabaseClientProvider.client
+    private val TAG = "SupabaseEventsRepo"
 
-    override suspend fun getEvents(): List<MarketEvent> =
+    override suspend fun getEvents(): List<MarketEvent> = try {
         client.from("market_events")
             .select {
                 order("detected_at", Order.DESCENDING)
             }
             .decodeList<MarketEventRow>()
             .map { it.toDomain() }
+    } catch (e: Exception) {
+        Log.e(TAG, "Error fetching events", e)
+        emptyList()
+    }
 
     override suspend fun getEventById(eventId: String): MarketEvent =
         client.from("market_events")
@@ -32,7 +38,7 @@ class SupabaseEventsRepository : EventsRepository {
             ?.toDomain()
             ?: throw NoSuchElementException("No event for $eventId")
 
-    override suspend fun getEventCauses(eventId: String): List<EventCause> =
+    override suspend fun getEventCauses(eventId: String): List<EventCause> = try {
         client.from("event_causes")
             .select {
                 filter {
@@ -42,6 +48,10 @@ class SupabaseEventsRepository : EventsRepository {
             }
             .decodeList<EventCauseRow>()
             .map { it.toDomain() }
+    } catch (e: Exception) {
+        Log.e(TAG, "Error fetching event causes", e)
+        emptyList()
+    }
 }
 
 @Serializable
@@ -67,8 +77,13 @@ private data class MarketEventRow(
     fun toDomain(): MarketEvent =
         MarketEvent(
             id = id,
-            tickerKey = tickerKey,
-            eventType = EventType.valueOf(eventType),
+            tickerKey = tickerKey.uppercase(),
+            eventType = try {
+                EventType.valueOf(eventType.uppercase())
+            } catch (e: Exception) {
+                Log.w("MarketEventRow", "Unknown event type: $eventType, defaulting to PRICE_SPIKE_UP")
+                EventType.PRICE_SPIKE_UP
+            },
             percentMove = percentMove,
             startTime = parseInstant(startTime),
             detectedAt = parseInstant(detectedAt),

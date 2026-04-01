@@ -38,7 +38,7 @@ class SupabasePortfolioRepository : PortfolioRepository {
         val portfolio = ensurePortfolioForCurrentUser()
 
         client.from("portfolio_positions").upsert(
-            PortfolioPositionInsert(portfolioId = portfolio.id, tickerKey = tickerKey)
+            PortfolioPositionInsert(portfolioId = portfolio.id, tickerKey = tickerKey.uppercase())
         ) {
             onConflict = "portfolio_id,ticker_key"
             ignoreDuplicates = true
@@ -51,7 +51,7 @@ class SupabasePortfolioRepository : PortfolioRepository {
         client.from("portfolio_positions").delete {
             filter {
                 eq("portfolio_id", portfolio.id)
-                eq("ticker_key", tickerKey)
+                eq("ticker_key", tickerKey.uppercase())
             }
         }
     }
@@ -64,7 +64,7 @@ class SupabasePortfolioRepository : PortfolioRepository {
         ) {
             filter {
                 eq("portfolio_id", portfolio.id)
-                eq("ticker_key", tickerKey)
+                eq("ticker_key", tickerKey.uppercase())
             }
         }
     }
@@ -130,7 +130,7 @@ private data class PortfolioPositionRow(
 ) {
     fun toDomain(): PortfolioPosition =
         PortfolioPosition(
-            tickerKey = tickerKey,
+            tickerKey = tickerKey.uppercase(),
             shares = weight,
             avgCost = avgCost
         )

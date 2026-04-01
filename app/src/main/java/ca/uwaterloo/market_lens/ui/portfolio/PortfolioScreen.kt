@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import ca.uwaterloo.market_lens.domain.model.StockQuote
 import ca.uwaterloo.market_lens.navigation.Routes
 import ca.uwaterloo.market_lens.ui.theme.*
 
@@ -125,8 +126,7 @@ fun PortfolioScreen(
                             ticker = position.tickerKey,
                             shares = position.shares,
                             avgCost = position.avgCost,
-                            price = if (quote != null) String.format("$%,.2f", quote.price) else "...",
-                            change = if (quote != null) quote.changePercent else null,
+                            quote = quote,
                             holdingValue = holdingValue,
                             unrealizedGain = unrealizedGain,
                             unrealizedGainPercent = unrealizedGainPercent,
@@ -309,8 +309,7 @@ fun StockCard(
     ticker: String,
     shares: Double?,
     avgCost: Double?,
-    price: String,
-    change: Double?,
+    quote: StockQuote?,
     holdingValue: Double?,
     unrealizedGain: Double?,
     unrealizedGainPercent: Double?,
@@ -318,6 +317,8 @@ fun StockCard(
     onEdit: () -> Unit,
     onCardClick: () -> Unit
 ) {
+    val price = if (quote != null) String.format("$%,.2f", quote.price) else "..."
+    val change = quote?.changePercent
     val changeColor = when {
         change == null -> TextMuted
         change >= 0 -> MarketGreen
@@ -331,50 +332,85 @@ fun StockCard(
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
         modifier = Modifier.fillMaxWidth().clickable { onCardClick() }
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp).fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier.size(48.dp).clip(RoundedCornerShape(8.dp)).background(MarketDarkGray),
-                contentAlignment = Alignment.Center
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(text = ticker, color = MarketGreen, fontWeight = FontWeight.Bold)
+                Box(
+                    modifier = Modifier.size(48.dp).clip(RoundedCornerShape(8.dp)).background(MarketDarkGray),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = ticker, color = MarketGreen, fontWeight = FontWeight.Bold)
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(text = ticker, style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        text = if (change != null) "$price  ${changePrefix}${String.format("%.2f", change)}%" else "Price: $price",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = changeColor,
+                        fontSize = 14.sp
+                    )
+                }
+                IconButton(onClick = onEdit) {
+                    Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit position", tint = TextMuted)
+                }
+                IconButton(onClick = onDelete) {
+                    Icon(imageVector = Icons.Default.Close, contentDescription = "Delete", tint = MarketRed)
+                }
             }
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = ticker, style = MaterialTheme.typography.titleMedium)
+
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            // Stock Metrics Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                MetricItem(label = "Mkt Cap", value = formatLargeNumber(quote?.marketCap))
+                MetricItem(label = "Volume", value = formatLargeNumber(quote?.volume))
+                MetricItem(label = "P/E", value = quote?.peRatio?.let { String.format("%.2f", it) } ?: "--")
+            }
+
+            if (holdingValue != null && holdingValue > 0) {
+                Spacer(modifier = Modifier.height(8.dp))
+                val sharesLabel = shares?.let { String.format("%.4g shares", it) } ?: ""
                 Text(
-                    text = if (change != null) "$price  ${changePrefix}${String.format("%.2f", change)}%" else "Price: $price",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = changeColor,
-                    fontSize = 14.sp
+                    text = "${String.format("$%,.2f", holdingValue)}  ·  $sharesLabel",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextMuted
                 )
-                if (holdingValue != null && holdingValue > 0) {
-                    val sharesLabel = shares?.let { String.format("%.4g shares", it) } ?: ""
-                    Text(
-                        text = "${String.format("$%,.2f", holdingValue)}  ·  $sharesLabel",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = TextMuted
-                    )
-                }
-                if (unrealizedGain != null) {
-                    val gainColor = if (unrealizedGain >= 0) MarketGreen else MarketRed
-                    val gainPrefix = if (unrealizedGain >= 0) "+" else ""
-                    val pctLabel = unrealizedGainPercent?.let { " (${gainPrefix}${String.format("%.2f", it)}%)" } ?: ""
-                    Text(
-                        text = "${gainPrefix}${String.format("$%,.2f", unrealizedGain)}$pctLabel unrealized",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = gainColor
-                    )
-                }
             }
-            IconButton(onClick = onEdit) {
-                Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit position", tint = TextMuted)
-            }
-            IconButton(onClick = onDelete) {
-                Icon(imageVector = Icons.Default.Close, contentDescription = "Delete", tint = MarketRed)
+            if (unrealizedGain != null) {
+                val gainColor = if (unrealizedGain >= 0) MarketGreen else MarketRed
+                val gainPrefix = if (unrealizedGain >= 0) "+" else ""
+                val pctLabel = unrealizedGainPercent?.let { " (${gainPrefix}${String.format("%.2f", it)}%)" } ?: ""
+                Text(
+                    text = "${gainPrefix}${String.format("$%,.2f", unrealizedGain)}$pctLabel unrealized",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = gainColor
+                )
             }
         }
+    }
+}
+
+@Composable
+fun MetricItem(label: String, value: String) {
+    Column {
+        Text(text = label, style = MaterialTheme.typography.labelMedium, color = TextMuted)
+        Text(text = value, style = MaterialTheme.typography.bodySmall, color = TextWhite)
+    }
+}
+
+fun formatLargeNumber(number: Long?): String {
+    if (number == null) return "--"
+    return when {
+        number >= 1_000_000_000_000L -> String.format("%.2fT", number.toDouble() / 1_000_000_000_000L)
+        number >= 1_000_000_000L -> String.format("%.2fB", number.toDouble() / 1_000_000_000L)
+        number >= 1_000_000L -> String.format("%.2fM", number.toDouble() / 1_000_000L)
+        number >= 1_000L -> String.format("%.2fK", number.toDouble() / 1_000L)
+        else -> number.toString()
     }
 }
