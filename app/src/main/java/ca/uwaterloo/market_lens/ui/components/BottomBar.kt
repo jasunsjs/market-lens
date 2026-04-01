@@ -6,17 +6,21 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import ca.uwaterloo.market_lens.navigation.Routes
+import ca.uwaterloo.market_lens.ui.events.EventsViewModel
 import ca.uwaterloo.market_lens.ui.theme.*
 
 data class BottomNavItem(
     val route: String,
     val label: String,
     val icon: ImageVector,
-    val badgeCount: Int? = null
+    val hasBadge: Boolean = false
 )
 
 private val bottomNavItems = listOf(
@@ -34,12 +38,19 @@ private val bottomNavItems = listOf(
         route = Routes.EVENTS,
         label = "Timeline",
         icon = Icons.Default.Schedule,
-        badgeCount = 2
+        hasBadge = true
     )
 )
 
 @Composable
-fun BottomBar(currentRoute: String?, navController: NavController) {
+fun BottomBar(
+    currentRoute: String?, 
+    navController: NavController,
+    eventsViewModel: EventsViewModel = viewModel()
+) {
+    val eventsUiState by eventsViewModel.uiState.collectAsState()
+    val eventCount = eventsUiState.events.size
+
     NavigationBar(
         containerColor = MarketBarBlack
     ) {
@@ -58,14 +69,14 @@ fun BottomBar(currentRoute: String?, navController: NavController) {
                     }
                 },
                 icon = {
-                    if (item.badgeCount != null) {
+                    if (item.hasBadge && eventCount > 0) {
                         BadgedBox(
                             badge = {
                                 Badge(
                                     containerColor = MarketRed,
                                     contentColor = TextWhite
                                 ) {
-                                    Text(text = item.badgeCount.toString())
+                                    Text(text = eventCount.toString())
                                 }
                             }
                         ) {
