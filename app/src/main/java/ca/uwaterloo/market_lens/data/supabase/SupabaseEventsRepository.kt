@@ -52,14 +52,17 @@ class SupabaseEventsRepository : EventsRepository {
 
     override suspend fun getEventCauses(eventId: String): List<EventCause> = try {
         Log.d(TAG, "Fetching event causes for event: $eventId")
-        client.from("event_causes")
+        val response = client.from("event_causes")
             .select {
                 filter {
                     eq("event_id", eventId)
                 }
                 order("rank", Order.ASCENDING)
             }
-            .decodeList<EventCauseRow>()
+        
+        Log.d(TAG, "Event causes raw data: ${response.data}")
+        
+        response.decodeList<EventCauseRow>()
             .map { it.toDomain() }
     } catch (e: Exception) {
         Log.e(TAG, "Error fetching event causes", e)
@@ -143,6 +146,7 @@ private data class EventCauseRow(
             rank = rank,
             title = title,
             relevanceScore = relevanceScore,
-            rationale = rationale
+            rationale = rationale,
+            url = url // Mapped correctly now
         )
 }

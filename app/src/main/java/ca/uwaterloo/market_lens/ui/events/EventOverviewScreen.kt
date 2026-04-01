@@ -320,6 +320,30 @@ private fun ContributingFactorItem(factor: EventCause) {
             style = MaterialTheme.typography.bodyLarge,
             color = TextMuted
         )
+
+        if (!factor.url.isNullOrEmpty()) {
+            Spacer(modifier = Modifier.height(8.dp))
+            val context = LocalContext.current
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.clickable {
+                    context.startActivity(Intent(Intent.ACTION_VIEW, factor.url.toUri()))
+                }
+            ) {
+                Text(
+                    text = "Source",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MarketGreen
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Icon(
+                    imageVector = Icons.AutoMirrored.Outlined.OpenInNew,
+                    contentDescription = null,
+                    tint = MarketGreen,
+                    modifier = Modifier.size(14.dp)
+                )
+            }
+        }
     }
 }
 
