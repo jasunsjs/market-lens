@@ -42,7 +42,7 @@ class PortfolioViewModel(
 
                 var totalVal = 0.0
                 var totalCostBasis = 0.0
-                var costBasisKnown = false
+                var hasValidCostBasis = false
                 val positionValues = mutableMapOf<String, Double>()
 
                 portfolio.positions.forEach { pos ->
@@ -52,15 +52,18 @@ class PortfolioViewModel(
                         val posValue = shares * quote.price
                         positionValues[pos.tickerKey] = posValue
                         totalVal += posValue
-                        if (pos.avgCost != null && pos.avgCost > 0 && shares > 0) {
+                        
+                        // Only add to cost basis if we have BOTH shares and avgCost
+                        if (shares > 0 && pos.avgCost != null && pos.avgCost > 0) {
                             totalCostBasis += shares * pos.avgCost
-                            costBasisKnown = true
+                            hasValidCostBasis = true
                         }
                     }
                 }
 
-                val totalChange = if (costBasisKnown) totalVal - totalCostBasis else 0.0
-                val netChangePercent = if (costBasisKnown && totalCostBasis > 0) (totalChange / totalCostBasis) * 100.0 else 0.0
+                // Calculate return only if we have at least one position with a cost basis
+                val totalChange = if (hasValidCostBasis) totalVal - totalCostBasis else 0.0
+                val netChangePercent = if (hasValidCostBasis && totalCostBasis > 0) (totalChange / totalCostBasis) * 100.0 else 0.0
 
                 _uiState.value = _uiState.value.copy(
                     positions = portfolio.positions,

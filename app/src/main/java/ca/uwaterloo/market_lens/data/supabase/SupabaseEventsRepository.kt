@@ -15,14 +15,20 @@ class SupabaseEventsRepository : EventsRepository {
     private val TAG = "SupabaseEventsRepo"
 
     override suspend fun getEvents(): List<MarketEvent> = try {
-        client.from("market_events")
+        Log.d(TAG, "Querying market_events table...")
+        val response = client.from("market_events")
             .select {
                 order("detected_at", Order.DESCENDING)
             }
-            .decodeList<MarketEventRow>()
-            .map { it.toDomain() }
+        
+        // Log the raw JSON to see if any data is coming back
+        Log.d(TAG, "Raw response body: ${response.data}")
+
+        val events = response.decodeList<MarketEventRow>()
+        Log.d(TAG, "Successfully decoded ${events.size} events")
+        events.map { it.toDomain() }
     } catch (e: Exception) {
-        Log.e(TAG, "Error fetching events", e)
+        Log.e(TAG, "Error fetching events from Supabase", e)
         emptyList()
     }
 
