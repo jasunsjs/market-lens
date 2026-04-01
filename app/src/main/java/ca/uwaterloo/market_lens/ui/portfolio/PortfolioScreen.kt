@@ -7,10 +7,13 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.TrendingDown
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -32,6 +36,22 @@ fun PortfolioScreen(
 ) {
     var tickerInput by remember { mutableStateOf("") }
     val uiState by viewModel.uiState.collectAsState()
+    var editingTicker by remember { mutableStateOf<String?>(null) }
+
+    if (editingTicker != null) {
+        val ticker = editingTicker!!
+        val position = uiState.positions.find { it.tickerKey == ticker }
+        EditSharesDialog(
+            ticker = ticker,
+            currentShares = position?.shares,
+            currentAvgCost = position?.avgCost,
+            onConfirm = { shares, avgCost ->
+                viewModel.updateShares(ticker, shares, avgCost)
+                editingTicker = null
+            },
+            onDismiss = { editingTicker = null }
+        )
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -95,11 +115,23 @@ fun PortfolioScreen(
                 ) {
                     items(uiState.positions) { position ->
                         val quote = uiState.quotes[position.tickerKey]
+                        val holdingValue = uiState.positionValues[position.tickerKey]
+                        val unrealizedGain = if (position.shares != null && position.shares > 0
+                            && position.avgCost != null && position.avgCost > 0 && quote != null)
+                            position.shares * (quote.price - position.avgCost) else null
+                        val unrealizedGainPercent = if (position.avgCost != null && position.avgCost > 0 && quote != null)
+                            ((quote.price - position.avgCost) / position.avgCost) * 100.0 else null
                         StockCard(
                             ticker = position.tickerKey,
+                            shares = position.shares,
+                            avgCost = position.avgCost,
                             price = if (quote != null) String.format("$%,.2f", quote.price) else "...",
-                            change = if (quote != null) String.format("%.2f%%", quote.changePercent) else "...",
+                            change = if (quote != null) quote.changePercent else null,
+                            holdingValue = holdingValue,
+                            unrealizedGain = unrealizedGain,
+                            unrealizedGainPercent = unrealizedGainPercent,
                             onDelete = { viewModel.removeStock(position.tickerKey) },
+                            onEdit = { editingTicker = position.tickerKey },
                             onCardClick = {
                                 navController.navigate(Routes.stockDetail(position.tickerKey))
                             }
@@ -112,7 +144,77 @@ fun PortfolioScreen(
 }
 
 @Composable
+fun EditSharesDialog(
+    ticker: String,
+    currentShares: Double?,
+    currentAvgCost: Double?,
+    onConfirm: (Double, Double?) -> Unit,
+    onDismiss: () -> Unit
+) {
+    fun Double?.toFieldString() = if (this == null || this == 0.0) "" else toBigDecimal().stripTrailingZeros().toPlainString()
+
+    var sharesInput by remember { mutableStateOf(currentShares.toFieldString()) }
+    var avgCostInput by remember { mutableStateOf(currentAvgCost.toFieldString()) }
+
+    val fieldColors = OutlinedTextFieldDefaults.colors(
+        focusedBorderColor = MarketGreen,
+        unfocusedBorderColor = TextMuted,
+        focusedTextColor = TextWhite,
+        unfocusedTextColor = TextWhite,
+        cursorColor = MarketGreen,
+        focusedLabelColor = MarketGreen,
+        unfocusedLabelColor = TextMuted
+    )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = MarketCardBlack,
+        title = { Text("Edit Position - $ticker", color = TextWhite) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = sharesInput,
+                    onValueChange = { sharesInput = it },
+                    label = { Text("Number of shares") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    colors = fieldColors,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = avgCostInput,
+                    onValueChange = { avgCostInput = it },
+                    label = { Text("Avg cost per share ($)") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    colors = fieldColors,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                val shares = sharesInput.toDoubleOrNull()
+                if (shares != null && shares >= 0) {
+                    onConfirm(shares, avgCostInput.toDoubleOrNull())
+                }
+            }) {
+                Text("Save", color = MarketGreen)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = TextMuted)
+            }
+        }
+    )
+}
+
+@Composable
 fun PortfolioSummaryCard(totalValue: String, netChange: String, netChangePercent: String) {
+    val isPositive = !netChange.startsWith("-")
+    val changeColor = if (isPositive) MarketGreen else MarketRed
+
     Card(
         colors = CardDefaults.cardColors(containerColor = MarketCardBlack),
         modifier = Modifier.fillMaxWidth()
@@ -129,16 +231,16 @@ fun PortfolioSummaryCard(totalValue: String, netChange: String, netChangePercent
                 Text(totalValue, style = MaterialTheme.typography.headlineLarge)
             }
             Column(horizontalAlignment = Alignment.End) {
-                Text("Net Change", style = MaterialTheme.typography.bodyLarge, color = TextMuted)
+                Text("Total Return", style = MaterialTheme.typography.bodyLarge, color = TextMuted)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        Icons.AutoMirrored.Filled.TrendingUp,
-                        null, tint = MarketGreen,
+                        if (isPositive) Icons.AutoMirrored.Filled.TrendingUp else Icons.AutoMirrored.Filled.TrendingDown,
+                        null, tint = changeColor,
                         modifier = Modifier.size(16.dp)
                     )
                     Text(
                         "$netChange $netChangePercent",
-                        color = MarketGreen,
+                        color = changeColor,
                         style = MaterialTheme.typography.bodyLarge
                     )
                 }
@@ -205,11 +307,24 @@ fun AddStockSection(
 @Composable
 fun StockCard(
     ticker: String,
+    shares: Double?,
+    avgCost: Double?,
     price: String,
-    change: String,
+    change: Double?,
+    holdingValue: Double?,
+    unrealizedGain: Double?,
+    unrealizedGainPercent: Double?,
     onDelete: () -> Unit,
+    onEdit: () -> Unit,
     onCardClick: () -> Unit
 ) {
+    val changeColor = when {
+        change == null -> TextMuted
+        change >= 0 -> MarketGreen
+        else -> MarketRed
+    }
+    val changePrefix = if ((change ?: 0.0) >= 0) "+" else ""
+
     Card(
         colors = CardDefaults.cardColors(containerColor = MarketCardBlack),
         shape = RoundedCornerShape(12.dp),
@@ -229,7 +344,33 @@ fun StockCard(
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = ticker, style = MaterialTheme.typography.titleMedium)
-                Text(text = "Price: $price ($change)", style = MaterialTheme.typography.bodyLarge, color = TextMuted, fontSize = 14.sp)
+                Text(
+                    text = if (change != null) "$price  ${changePrefix}${String.format("%.2f", change)}%" else "Price: $price",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = changeColor,
+                    fontSize = 14.sp
+                )
+                if (holdingValue != null && holdingValue > 0) {
+                    val sharesLabel = shares?.let { String.format("%.4g shares", it) } ?: ""
+                    Text(
+                        text = "${String.format("$%,.2f", holdingValue)}  ·  $sharesLabel",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextMuted
+                    )
+                }
+                if (unrealizedGain != null) {
+                    val gainColor = if (unrealizedGain >= 0) MarketGreen else MarketRed
+                    val gainPrefix = if (unrealizedGain >= 0) "+" else ""
+                    val pctLabel = unrealizedGainPercent?.let { " (${gainPrefix}${String.format("%.2f", it)}%)" } ?: ""
+                    Text(
+                        text = "${gainPrefix}${String.format("$%,.2f", unrealizedGain)}$pctLabel unrealized",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = gainColor
+                    )
+                }
+            }
+            IconButton(onClick = onEdit) {
+                Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit position", tint = TextMuted)
             }
             IconButton(onClick = onDelete) {
                 Icon(imageVector = Icons.Default.Close, contentDescription = "Delete", tint = MarketRed)

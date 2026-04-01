@@ -393,3 +393,9 @@ entrypoint = "./functions/process-market-alerts/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/process-market-alerts/*.html" ]
+
+[functions.generate-stock-analysis]
+enabled = true
+verify_jwt = true
+import_map = "./functions/generate-stock-analysis/deno.json"
+entrypoint = "./functions/generate-stock-analysis/index.ts"

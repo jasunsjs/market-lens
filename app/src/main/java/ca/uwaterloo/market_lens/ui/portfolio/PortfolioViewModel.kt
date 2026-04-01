@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 data class PortfolioUiState(
     val positions: List<PortfolioPosition> = emptyList(),
     val quotes: Map<String, StockQuote> = emptyMap(),
+    val positionValues: Map<String, Double> = emptyMap(), // ticker -> market value
     val totalValue: String = "$0.00",
     val netChange: String = "+$0.00",
     val netChangePercent: String = "(+0.00%)",
@@ -40,24 +41,31 @@ class PortfolioViewModel(
                 val quotes = portfolio.positions.associate { it.tickerKey to model.getQuote(it.tickerKey) }
 
                 var totalVal = 0.0
-                var totalChange = 0.0
+                var totalCostBasis = 0.0
+                var costBasisKnown = false
+                val positionValues = mutableMapOf<String, Double>()
 
                 portfolio.positions.forEach { pos ->
                     val quote = quotes[pos.tickerKey]
                     if (quote != null) {
-                        val weight = pos.weight ?: 0.0
-                        // Using weight as shares for simplicity in mock calculations
-                        val posValue = weight * quote.price
+                        val shares = pos.shares ?: 0.0
+                        val posValue = shares * quote.price
+                        positionValues[pos.tickerKey] = posValue
                         totalVal += posValue
-                        totalChange += posValue * (quote.changePercent / 100.0)
+                        if (pos.avgCost != null && pos.avgCost > 0 && shares > 0) {
+                            totalCostBasis += shares * pos.avgCost
+                            costBasisKnown = true
+                        }
                     }
                 }
 
-                val netChangePercent = if (totalVal != totalChange) (totalChange / (totalVal - totalChange)) * 100.0 else 0.0
+                val totalChange = if (costBasisKnown) totalVal - totalCostBasis else 0.0
+                val netChangePercent = if (costBasisKnown && totalCostBasis > 0) (totalChange / totalCostBasis) * 100.0 else 0.0
 
                 _uiState.value = _uiState.value.copy(
                     positions = portfolio.positions,
                     quotes = quotes,
+                    positionValues = positionValues,
                     totalValue = String.format("$%,.2f", totalVal),
                     netChange = String.format("%s$%,.2f", if (totalChange >= 0) "+" else "-", Math.abs(totalChange)),
                     netChangePercent = String.format("(%s%.2f%%)", if (netChangePercent >= 0) "+" else "", netChangePercent),
@@ -99,9 +107,16 @@ class PortfolioViewModel(
         }
     }
 
-    fun navigateToStockPage(ticker: String, onSuccess: () -> Unit) {
+    fun updateShares(ticker: String, shares: Double, avgCost: Double?) {
         viewModelScope.launch {
-            onSuccess()
+            try {
+                model.updateShares(ticker, shares, avgCost)
+                loadPortfolio()
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    errorMessage = e.message ?: "Unable to update shares."
+                )
+            }
         }
     }
 }

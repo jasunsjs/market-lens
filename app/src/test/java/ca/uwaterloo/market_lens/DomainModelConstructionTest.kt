@@ -135,8 +135,8 @@ class DomainModelConstructionTest {
             id = "portfolio-1",
             ownerUserId = "user-1",
             positions = listOf(
-                PortfolioPosition(tickerKey = "AAPL", weight = 0.5),
-                PortfolioPosition(tickerKey = "NVDA", weight = 0.5)
+                PortfolioPosition(tickerKey = "AAPL", shares = 0.5),
+                PortfolioPosition(tickerKey = "NVDA", shares = 0.5)
             )
         )
 

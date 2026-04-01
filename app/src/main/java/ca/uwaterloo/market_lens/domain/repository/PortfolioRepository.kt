@@ -7,4 +7,5 @@ interface PortfolioRepository {
     suspend fun getPortfolio(): Portfolio
     suspend fun addTicker(tickerKey: String)
     suspend fun removeTicker(tickerKey: String)
+    suspend fun updateShares(tickerKey: String, shares: Double, avgCost: Double?)
 }
