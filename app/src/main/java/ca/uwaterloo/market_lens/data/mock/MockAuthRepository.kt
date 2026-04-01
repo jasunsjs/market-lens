@@ -16,6 +16,11 @@ class MockAuthRepository : AuthRepository {
         return _authState.value
     }
 
+    override suspend fun signUp(email: String, password: String): AuthState {
+        _authState.value = AuthState.SignedIn(userId = "mock-user-1", email = email)
+        return _authState.value
+    }
+
     override suspend fun logout() {
         _authState.value = AuthState.SignedOut
     }

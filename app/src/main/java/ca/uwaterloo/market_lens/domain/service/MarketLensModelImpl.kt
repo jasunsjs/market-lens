@@ -2,9 +2,14 @@ package ca.uwaterloo.market_lens.domain.service
 
 import ca.uwaterloo.market_lens.domain.model.*
 import ca.uwaterloo.market_lens.domain.repository.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 class MarketLensModelImpl(
     private val authRepository: AuthRepository,
@@ -16,26 +21,36 @@ class MarketLensModelImpl(
     private val explanationRepository: ExplanationRepository
 ) : MarketLensModel {
 
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val _authState = MutableStateFlow<AuthState>(AuthState.Loading)
     override val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
     init {
-        // Sprint 2: set to SignedOut immediately (or load from mock)
-        _authState.value = AuthState.SignedOut
+        scope.launch {
+            authRepository.observeAuthState().collectLatest { state ->
+                _authState.value = state
+            }
+        }
     }
 
-    override suspend fun login(email: String, password: String) {
+    override suspend fun login(email: String, password: String): AuthState {
         _authState.value = AuthState.Loading
-        _authState.value = authRepository.login(email, password)
+        val result = authRepository.login(email, password)
+        _authState.value = result
+        return result
+    }
+
+    override suspend fun signUp(email: String, password: String): AuthState {
+        _authState.value = AuthState.Loading
+        val result = authRepository.signUp(email, password)
+        _authState.value = result
+        return result
     }
 
     override suspend fun logout() {
         authRepository.logout()
         _authState.value = AuthState.SignedOut
     }
-
-    override suspend fun getAvailableTickers(): List<Ticker> =
-        portfolioRepository.getAvailableTickers()
 
     override suspend fun getPortfolio(): Portfolio =
         portfolioRepository.getPortfolio()
@@ -46,6 +61,10 @@ class MarketLensModelImpl(
 
     override suspend fun removeTickerFromPortfolio(tickerKey: String) {
         portfolioRepository.removeTicker(tickerKey)
+    }
+
+    override suspend fun updateShares(tickerKey: String, shares: Double, avgCost: Double?) {
+        portfolioRepository.updateShares(tickerKey, shares, avgCost)
     }
 
     override suspend fun getQuote(tickerKey: String): StockQuote =

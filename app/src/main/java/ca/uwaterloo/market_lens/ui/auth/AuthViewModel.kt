@@ -2,40 +2,85 @@ package ca.uwaterloo.market_lens.ui.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import ca.uwaterloo.market_lens.di.AppGraph
+import ca.uwaterloo.market_lens.domain.model.AuthState
+import ca.uwaterloo.market_lens.domain.service.MarketLensModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class AuthViewModel : ViewModel() {
+class AuthViewModel(
+    private val model: MarketLensModel = AppGraph.model
+) : ViewModel() {
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
 
     private val _error = MutableStateFlow<String?>(null)
     val error = _error.asStateFlow()
 
-    fun submit(email: String, password: String, onSuccess: () -> Unit) {
-        //        if (email.isBlank() || pass.isBlank()) {
-        //            _error.value = "Please fill in all fields"
-        //            return
-        //        }
-
-        //        viewModelScope.launch {
-        //            _isLoading.value = true
-        //            _error.value = null
-        //
-        //            val result = supabaseService.login(email, pass)
-        //
-        //            result.onSuccess {
-        //                _isLoading.value = false
-        //                onSuccess() // Navigate only on success
-        //            }.onFailure { exception ->
-        //                _isLoading.value = false
-        //                _error.value = exception.message ?: "Login failed"
-        //            }
-        //        }
+    fun login(email: String, password: String, onSuccess: () -> Unit) {
+        if (email.isBlank() || password.isBlank()) {
+            _error.value = "Please fill in all fields"
+            return
+        }
 
         viewModelScope.launch {
-            onSuccess()
+            _isLoading.value = true
+            _error.value = null
+
+            // Capture the returned AuthState
+            val result = model.login(email, password)
+
+            _isLoading.value = false // Stop loading before handling the result
+
+            when (result) {
+                is AuthState.SignedIn -> onSuccess()
+                is AuthState.Error -> _error.value = mapErrorToMessage(result.message)
+                else -> { /* Optional: Handle unexpected states */ }
+            }
+        }
+    }
+
+    fun signUp(email: String, password: String, onSuccess: () -> Unit) {
+        if (email.isBlank() || password.isBlank()) {
+            _error.value = "Please fill in all fields"
+            return
+        }
+
+        if (password.length < 6) {
+            _error.value = "Password must be at least 6 characters"
+            return
+        }
+
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+
+            // Capture the returned AuthState directly
+            val result = model.signUp(email, password)
+
+            _isLoading.value = false
+
+            when (result) {
+                is AuthState.SignedIn -> onSuccess()
+                is AuthState.Error -> _error.value = mapErrorToMessage(result.message)
+                else -> { /* Optional: Handle unexpected states */ }
+            }
+        }
+    }
+
+    private fun mapErrorToMessage(rawError: String): String {
+        return when {
+            rawError.contains("invalid login credentials", ignoreCase = true) ->
+                "Invalid email or password. Please try again."
+            rawError.contains("user already exists", ignoreCase = true) ->
+                "An account with this email already exists."
+            rawError.contains("network", ignoreCase = true) ->
+                "Network error. Please check your internet connection."
+            rawError.contains("email not confirmed", ignoreCase = true) ->
+                "Please confirm your email address before logging in."
+            rawError.isBlank() -> "An unexpected error occurred. Please try again."
+            else -> rawError
         }
     }
 }

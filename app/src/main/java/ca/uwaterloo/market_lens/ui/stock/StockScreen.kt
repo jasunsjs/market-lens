@@ -4,16 +4,21 @@ import android.graphics.Paint
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material.icons.automirrored.filled.TrendingDown
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material3.*
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -74,16 +79,64 @@ fun StockScreen(
             uiState.quote?.let { quote ->
                 item {
                     Card(colors = CardDefaults.cardColors(containerColor = MarketCardBlack), modifier = Modifier.fillMaxWidth()) {
-                        Row(modifier = Modifier.padding(24.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Column {
-                                Text(quote.tickerKey, style = MaterialTheme.typography.headlineLarge)
-                                Text("Real-time Stock Analysis", style = MaterialTheme.typography.bodyLarge)
+                        Column(modifier = Modifier.padding(24.dp)) {
+                            // Price section
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                Column {
+                                    Text(quote.tickerKey, style = MaterialTheme.typography.headlineLarge)
+                                    Text("Real-time Stock Analysis", style = MaterialTheme.typography.bodyLarge, color = TextMuted)
+                                }
+                                Column(horizontalAlignment = Alignment.End) {
+                                    Text(String.format("$%,.2f", quote.price), style = MaterialTheme.typography.headlineLarge)
+                                    val changeColor = if (quote.changePercent >= 0) MarketGreen else MarketRed
+                                    val changePrefix = if (quote.changePercent >= 0) "+" else ""
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(if (quote.changePercent >= 0) Icons.AutoMirrored.Filled.TrendingUp else Icons.AutoMirrored.Filled.TrendingDown, null, tint = changeColor, modifier = Modifier.size(16.dp))
+                                        Text(String.format("$changePrefix%.2f%%", quote.changePercent), color = changeColor, style = MaterialTheme.typography.bodyLarge)
+                                    }
+                                }
                             }
-                            Column(horizontalAlignment = Alignment.End) {
-                                Text(String.format("$%,.2f", quote.price), style = MaterialTheme.typography.headlineLarge)
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.AutoMirrored.Filled.TrendingUp, null, tint = MarketGreen, modifier = Modifier.size(16.dp))
-                                    Text(String.format("%.2f%%", quote.changePercent), color = MarketGreen, style = MaterialTheme.typography.bodyLarge)
+
+                            // Holdings section
+                            if (uiState.holdingValue != null) {
+                                Spacer(Modifier.height(16.dp))
+                                HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
+                                Spacer(Modifier.height(16.dp))
+                                Text("Your Position", style = MaterialTheme.typography.labelMedium, color = TextMuted)
+                                Spacer(Modifier.height(8.dp))
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
+                                    Column {
+                                        Text("Market Value", style = MaterialTheme.typography.labelSmall, color = TextMuted)
+                                        Text(String.format("$%,.2f", uiState.holdingValue), style = MaterialTheme.typography.titleMedium)
+                                        uiState.shares?.let {
+                                            Text(String.format("%.4g shares", it), style = MaterialTheme.typography.bodySmall, color = TextMuted)
+                                        }
+                                    }
+                                    uiState.avgCost?.let { cost ->
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Text("Avg Cost", style = MaterialTheme.typography.labelSmall, color = TextMuted)
+                                            Text(String.format("$%,.2f", cost), style = MaterialTheme.typography.titleMedium)
+                                        }
+                                    }
+                                    uiState.unrealizedGain?.let { gain ->
+                                        val gainColor = if (gain >= 0) MarketGreen else MarketRed
+                                        val gainPrefix = if (gain >= 0) "+" else ""
+                                        Column(horizontalAlignment = Alignment.End) {
+                                            Text("Unrealized", style = MaterialTheme.typography.labelSmall, color = TextMuted)
+                                            Text(
+                                                text = "${gainPrefix}${String.format("$%,.2f", gain)}",
+                                                style = MaterialTheme.typography.titleMedium,
+                                                color = gainColor
+                                            )
+                                            uiState.unrealizedGainPercent?.let { pct ->
+                                                Text(
+                                                    text = "${gainPrefix}${String.format("%.2f", pct)}%",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = gainColor
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -228,6 +281,7 @@ fun NewsCard(newsItems: List<NewsItem>) {
 
 @Composable
 fun NewsItemRow(news: NewsItem) {
+    val context = LocalContext.current
     Row(modifier = Modifier.padding(16.dp).height(IntrinsicSize.Min)) {
         Box(modifier = Modifier.width(4.dp).fillMaxHeight().background(MarketGreen, shape = RoundedCornerShape(2.dp)))
         Spacer(modifier = Modifier.width(16.dp))
@@ -239,7 +293,13 @@ fun NewsItemRow(news: NewsItem) {
             Spacer(modifier = Modifier.height(4.dp))
             news.snippet?.let { Text(text = it, style = MaterialTheme.typography.bodyMedium, color = TextMuted) }
             Spacer(modifier = Modifier.height(8.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.clickable {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(news.url))
+                    context.startActivity(intent)
+                }
+            ) {
                 Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = "Read more", tint = MarketGreen, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(text = "Read more on ${news.source.name}", color = MarketGreen, style = MaterialTheme.typography.labelMedium)
@@ -255,8 +315,14 @@ fun AnalysisCard(ticker: String, analysis: StockAnalysis) {
             Text(text = "AI Analysis Summary", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = TextWhite)
             Text(text = analysis.summary, style = MaterialTheme.typography.bodyLarge, lineHeight = 24.sp, color = TextWhite.copy(alpha = 0.9f))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Surface(color = MarketGreen.copy(alpha = 0.15f), shape = RoundedCornerShape(16.dp), border = BorderStroke(1.dp, MarketGreen.copy(alpha = 0.3f))) {
-                    Text(text = if (analysis.sentiment == Sentiment.BULLISH) "Bullish Signal" else "Bearish Signal", modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), style = MaterialTheme.typography.labelLarge, color = MarketGreen)
+                val (sentimentLabel, sentimentColor) = when (analysis.sentiment) {
+                    Sentiment.BULLISH -> "Bullish Signal" to MarketGreen
+                    Sentiment.BEARISH -> "Bearish Signal" to MarketRed
+                    Sentiment.MIXED -> "Mixed Signals" to Color(0xFFFFA500)
+                    Sentiment.NEUTRAL -> "Neutral" to TextMuted
+                }
+                Surface(color = sentimentColor.copy(alpha = 0.15f), shape = RoundedCornerShape(16.dp), border = BorderStroke(1.dp, sentimentColor.copy(alpha = 0.3f))) {
+                    Text(text = sentimentLabel, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), style = MaterialTheme.typography.labelLarge, color = sentimentColor)
                 }
                 Surface(color = MarketDarkGray, shape = RoundedCornerShape(16.dp)) {
                     Text(text = String.format("Confidence: %.0f%%", analysis.confidence * 100), modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), style = MaterialTheme.typography.labelLarge, color = TextMuted)

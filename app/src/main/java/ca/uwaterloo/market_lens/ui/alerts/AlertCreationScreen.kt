@@ -58,6 +58,16 @@ fun CreateAlertScreen(
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
+                    val errorMessage = uiState.errorMessage
+                    if (errorMessage != null) {
+                        Text(
+                            text = errorMessage,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+
                     // Ticker Selector
                     Text(text = "Select Stock from Portfolio", style = MaterialTheme.typography.labelLarge, color = TextWhite)
                     Spacer(modifier = Modifier.height(8.dp))
@@ -151,8 +161,11 @@ fun CreateAlertScreen(
 
                     Button(
                         onClick = { 
-                            viewModel.addAlert()
-                            navController.popBackStack()
+                            viewModel.addAlert { success ->
+                                if (success) {
+                                    navController.popBackStack()
+                                }
+                            }
                         },
                         modifier = Modifier.fillMaxWidth().height(52.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = MarketGreen, contentColor = Color.Black),

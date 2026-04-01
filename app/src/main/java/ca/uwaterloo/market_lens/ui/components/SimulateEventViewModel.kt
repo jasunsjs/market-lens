@@ -11,26 +11,27 @@ class SimulateEventViewModel(
     private val model: MarketLensModel = AppGraph.model
 ) : ViewModel() {
 
-    fun simulateRandomEvent(onComplete: () -> Unit) {
+    fun simulateRandomEvent() {
         viewModelScope.launch {
-            val portfolio = model.getPortfolio()
-            val portfolioTickers = portfolio.positions.map { it.tickerKey }.toSet()
-            
-            // Get all possible events from domain model
-            val allPossibleEvents = model.getEvents()
-            
-            // Filter for tickers in portfolio that aren't already simulated
-            val currentSimulated = SimulationManager.simulatedEventIds.value
-            val availableEvents = allPossibleEvents.filter { 
-                it.tickerKey in portfolioTickers && it.id !in currentSimulated 
+            try {
+                val portfolio = model.getPortfolio()
+                val portfolioTickers = portfolio.positions.map { it.tickerKey }.toSet()
+
+                // Get all possible events from domain model
+                val allPossibleEvents = model.getEvents()
+
+                // Filter for tickers in portfolio that aren't already simulated
+                val currentSimulated = SimulationManager.simulatedEventIds.value
+                val availableEvents = allPossibleEvents.filter {
+                    it.tickerKey in portfolioTickers && it.id !in currentSimulated
+                }
+
+                if (availableEvents.isNotEmpty()) {
+                    val nextEvent = availableEvents.random()
+                    SimulationManager.triggerEvent(nextEvent)
+                }
+            } catch (_: Exception) {
             }
-            
-            if (availableEvents.isNotEmpty()) {
-                val nextEvent = availableEvents.random()
-                SimulationManager.triggerEvent(nextEvent.id)
-            }
-            
-            onComplete()
         }
     }
 }

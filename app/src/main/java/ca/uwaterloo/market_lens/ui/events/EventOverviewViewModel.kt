@@ -26,17 +26,21 @@ class EventOverviewViewModel(
 
     fun loadEventDetail(eventId: String) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
-            val event = model.getEventById(eventId)
-            val causes = model.getEventCauses(eventId)
-            val explanation = model.getExplanation(eventId)
-            
-            _uiState.value = _uiState.value.copy(
-                event = event,
-                causes = causes,
-                explanation = explanation,
-                isLoading = false
-            )
+            try {
+                _uiState.value = _uiState.value.copy(isLoading = true)
+                val event = model.getEventById(eventId)
+                val causes = model.getEventCauses(eventId)
+                val explanation = model.getExplanation(eventId)
+
+                _uiState.value = _uiState.value.copy(
+                    event = event,
+                    causes = causes,
+                    explanation = explanation,
+                    isLoading = false
+                )
+            } catch (_: Exception) {
+                _uiState.value = _uiState.value.copy(isLoading = false)
+            }
         }
     }
 }

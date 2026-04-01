@@ -21,11 +21,16 @@ fun SignupScreen(
         isLoading = isLoading,
         errorMessage = errorMessage,
         onPrimaryClick = { email, password ->
-            viewModel.submit(email, password) {
-                navController.navigate(Routes.PORTFOLIO) {
-                    popUpTo(Routes.LOGIN) { inclusive = true }
+            viewModel.signUp(email, password) {
+                // On success, redirect to login screen
+                navController.navigate(Routes.LOGIN) {
+                    popUpTo(Routes.SIGNUP) { inclusive = true }
                 }
             }
+        },
+        secondaryButtonText = "BACK TO LOGIN",
+        onSecondaryClick = {
+            navController.popBackStack()
         }
     )
 }

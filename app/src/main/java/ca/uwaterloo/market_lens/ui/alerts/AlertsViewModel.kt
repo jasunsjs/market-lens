@@ -20,7 +20,8 @@ data class AlertConfigUiState(
     val selectedType: AlertType = AlertType.PRICE_CHANGE,
     val threshold: Double = 5.0,
     val isLoading: Boolean = false,
-    val isSavedFeedbackVisible: Boolean = false
+    val isSavedFeedbackVisible: Boolean = false,
+    val errorMessage: String? = null
 )
 
 class AlertsViewModel(
@@ -35,20 +36,30 @@ class AlertsViewModel(
 
     fun loadData() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
-            val portfolio = model.getPortfolio()
-            val tickers = portfolio.positions.map { it.tickerKey }
-            val allRules = model.getAlertRules()
+            try {
+                _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+                val portfolio = model.getPortfolio()
+                val tickers = portfolio.positions.map { it.tickerKey }
+                val allRules = model.getAlertRules()
 
-            // Filter rules to only show those in portfolio
-            val filteredRules = allRules.filter { it.tickerKey in tickers }
+                // Filter rules to only show those in portfolio
+                val filteredRules = allRules.filter { it.tickerKey in tickers }
 
-            _uiState.update { it.copy(
-                alertRules = filteredRules,
-                portfolioTickers = tickers,
-                selectedTicker = if (tickers.isNotEmpty()) tickers[0] else "",
-                isLoading = false
-            ) }
+                _uiState.update { it.copy(
+                    alertRules = filteredRules,
+                    portfolioTickers = tickers,
+                    selectedTicker = if (tickers.isNotEmpty()) tickers[0] else "",
+                    isLoading = false,
+                    errorMessage = null
+                ) }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = e.message ?: "Unable to load alerts."
+                    )
+                }
+            }
         }
     }
 
@@ -64,36 +75,62 @@ class AlertsViewModel(
         _uiState.update { it.copy(threshold = threshold) }
     }
 
-    fun addAlert() {
+    fun addAlert(onComplete: (Boolean) -> Unit = {}) {
         viewModelScope.launch {
-            val state = _uiState.value
-            if (state.selectedTicker.isNotEmpty()) {
-                model.addAlertRule(
-                    tickerKey = state.selectedTicker,
-                    alertType = state.selectedType,
-                    threshold = state.threshold,
-                    enabled = true
-                )
-                _uiState.update { it.copy(isSavedFeedbackVisible = true) }
-                loadData()
-                delay(1200L)
-                _uiState.update { it.copy(isSavedFeedbackVisible = false) }
+            try {
+                val state = _uiState.value
+                if (state.selectedTicker.isNotEmpty()) {
+                    model.addAlertRule(
+                        tickerKey = state.selectedTicker,
+                        alertType = state.selectedType,
+                        threshold = state.threshold,
+                        enabled = true
+                    )
+                    _uiState.update { it.copy(isSavedFeedbackVisible = true, errorMessage = null) }
+                    loadData()
+                    delay(1200L)
+                    _uiState.update { it.copy(isSavedFeedbackVisible = false) }
+                    onComplete(true)
+                } else {
+                    _uiState.update { it.copy(errorMessage = "Please select a ticker.") }
+                    onComplete(false)
+                }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isSavedFeedbackVisible = false,
+                        errorMessage = e.message ?: "Unable to create alert."
+                    )
+                }
+                onComplete(false)
             }
         }
     }
 
     fun onAlertEnabledChanged(ruleId: String, enabled: Boolean) {
         viewModelScope.launch {
-            val rule = _uiState.value.alertRules.find { it.id == ruleId } ?: return@launch
-            model.editAlertRule(rule.copy(enabled = enabled))
-            loadData()
+            try {
+                val rule = _uiState.value.alertRules.find { it.id == ruleId } ?: return@launch
+                model.editAlertRule(rule.copy(enabled = enabled))
+                loadData()
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(errorMessage = e.message ?: "Unable to update alert.")
+                }
+            }
         }
     }
 
     fun deleteAlertRule(ruleId: String) {
         viewModelScope.launch {
-            model.deleteAlertRule(ruleId)
-            loadData()
+            try {
+                model.deleteAlertRule(ruleId)
+                loadData()
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(errorMessage = e.message ?: "Unable to delete alert.")
+                }
+            }
         }
     }
 }

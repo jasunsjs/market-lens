@@ -60,6 +60,16 @@ fun AlertsScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        val errorMessage = uiState.errorMessage
+        if (errorMessage != null) {
+            Text(
+                text = errorMessage,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+        }
+
         if (uiState.isLoading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = MarketGreen)
