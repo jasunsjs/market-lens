@@ -21,7 +21,6 @@ class SupabaseEventsRepository : EventsRepository {
                 order("detected_at", Order.DESCENDING)
             }
         
-        // Log the raw JSON to see if any data is coming back
         Log.d(TAG, "Raw response body: ${response.data}")
 
         val events = response.decodeList<MarketEventRow>()
@@ -32,7 +31,8 @@ class SupabaseEventsRepository : EventsRepository {
         emptyList()
     }
 
-    override suspend fun getEventById(eventId: String): MarketEvent =
+    override suspend fun getEventById(eventId: String): MarketEvent = try {
+        Log.d(TAG, "Fetching event by id: $eventId")
         client.from("market_events")
             .select {
                 filter {
@@ -43,8 +43,13 @@ class SupabaseEventsRepository : EventsRepository {
             .decodeSingleOrNull<MarketEventRow>()
             ?.toDomain()
             ?: throw NoSuchElementException("No event for $eventId")
+    } catch (e: Exception) {
+        Log.e(TAG, "Error fetching event $eventId", e)
+        throw e
+    }
 
     override suspend fun getEventCauses(eventId: String): List<EventCause> = try {
+        Log.d(TAG, "Fetching event causes for event: $eventId")
         client.from("event_causes")
             .select {
                 filter {
@@ -72,7 +77,7 @@ private data class MarketEventRow(
     @SerialName("start_time")
     val startTime: String,
     @SerialName("detected_at")
-    val detectedAt: String,
+    val detectedAt: String? = null,
     @SerialName("price_before")
     val priceBefore: Double,
     @SerialName("price_after")
@@ -92,7 +97,7 @@ private data class MarketEventRow(
             },
             percentMove = percentMove,
             startTime = parseInstant(startTime),
-            detectedAt = parseInstant(detectedAt),
+            detectedAt = parseInstant(detectedAt ?: startTime),
             priceBefore = priceBefore,
             priceAfter = priceAfter,
             briefDescription = briefDescription
@@ -105,8 +110,8 @@ private data class EventCauseRow(
     @SerialName("event_id")
     val eventId: String,
     @SerialName("news_item_id")
-    val newsItemId: String,
-    val url: String,
+    val newsItemId: String? = null,
+    val url: String? = null,
     val rank: Int,
     val title: String,
     @SerialName("relevance_score")
@@ -116,7 +121,7 @@ private data class EventCauseRow(
     fun toDomain(): EventCause =
         EventCause(
             eventId = eventId,
-            newsItemId = newsItemId,
+            newsItemId = newsItemId ?: "",
             rank = rank,
             title = title,
             relevanceScore = relevanceScore,

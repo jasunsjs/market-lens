@@ -102,6 +102,22 @@ serve(async () => {
         r => r.ticker_key === ticker && Math.abs(percentChange) >= r.threshold
       )
       if (matchingRules.length === 0) continue
+
+      // check if a duplicate event was recorded in the last 60 minutes
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
+      const { data: existingEvent } = await supabase
+        .from('market_events')
+        .select('id')
+        .eq('ticker_key', ticker)
+        .eq('price_after', quote.c)
+        .eq('percent_move', quote.dp)
+        .gt('start_time', oneHourAgo)
+        .limit(1)
+        .maybeSingle()
+      if (existingEvent) {
+        console.log(`Duplicate event detected for ${ticker} at price ${quote.c}. Skipping.`)
+        continue
+      }
       console.log(`MATCH ${ticker}: ${percentChange}%`)
       const news: any[] = await retry(async () => {
         const res = await fetch(
