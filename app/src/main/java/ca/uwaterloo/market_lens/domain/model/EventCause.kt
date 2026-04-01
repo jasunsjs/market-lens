@@ -6,5 +6,6 @@ data class EventCause(
     val rank: Int,
     val title: String,
     val relevanceScore: Double,
-    val rationale: String
+    val rationale: String,
+    val url: String? = null
 )

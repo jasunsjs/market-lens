@@ -83,7 +83,9 @@ fun EventOverviewScreen(
         Spacer(modifier = Modifier.height(16.dp))
         EventHeaderCard(event)
         Spacer(modifier = Modifier.height(16.dp))
-        uiState.explanation?.let { AiExplanationCard(it.summary) }
+        uiState.explanation?.let { 
+            AiExplanationCard(it) 
+        }
         Spacer(modifier = Modifier.height(16.dp))
         ContributingFactorsCard(uiState.causes)
         Spacer(modifier = Modifier.height(16.dp))
@@ -187,7 +189,7 @@ private fun EventHeaderCard(data: MarketEvent) {
 }
 
 @Composable
-private fun AiExplanationCard(explanation: String) {
+private fun AiExplanationCard(explanation: AiExplanation) {
     Card(
         colors = CardDefaults.cardColors(containerColor = MarketCardBlack),
         shape = RoundedCornerShape(12.dp),
@@ -202,10 +204,21 @@ private fun AiExplanationCard(explanation: String) {
             )
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = explanation,
+                text = explanation.summary,
                 style = MaterialTheme.typography.bodyLarge,
-                color = TextMuted
+                color = TextWhite,
+                fontWeight = FontWeight.Medium
             )
+            
+            if (explanation.bullets.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(12.dp))
+                explanation.bullets.forEach { bullet ->
+                    Row(modifier = Modifier.padding(vertical = 4.dp)) {
+                        Text(text = "•", color = MarketGreen, modifier = Modifier.padding(end = 8.dp))
+                        Text(text = bullet, style = MaterialTheme.typography.bodyMedium, color = TextMuted)
+                    }
+                }
+            }
         }
     }
 }
@@ -226,10 +239,14 @@ private fun ContributingFactorsCard(factors: List<EventCause>) {
             )
             Spacer(modifier = Modifier.height(16.dp))
 
-            factors.forEachIndexed { index, factor ->
-                ContributingFactorItem(factor)
-                if (index < factors.lastIndex) {
-                    Spacer(modifier = Modifier.height(20.dp))
+            if (factors.isEmpty()) {
+                Text(text = "No contributing factors identified for this event.", color = TextMuted)
+            } else {
+                factors.forEachIndexed { index, factor ->
+                    ContributingFactorItem(factor)
+                    if (index < factors.lastIndex) {
+                        Spacer(modifier = Modifier.height(20.dp))
+                    }
                 }
             }
         }
@@ -303,32 +320,6 @@ private fun ContributingFactorItem(factor: EventCause) {
             style = MaterialTheme.typography.bodyLarge,
             color = TextMuted
         )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Source
-        val context = LocalContext.current
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.clickable {
-                // For mock, we don't have direct source URLs in EventCause, 
-                // but we could navigate to the news item URL if needed.
-                // context.startActivity(Intent(Intent.ACTION_VIEW, "https://google.com".toUri()))
-            }
-        ) {
-            Text(
-                text = "Source: AI Analysis",
-                style = MaterialTheme.typography.labelMedium,
-                color = MarketGreen
-            )
-            Spacer(modifier = Modifier.width(4.dp))
-            Icon(
-                imageVector = Icons.AutoMirrored.Outlined.OpenInNew,
-                contentDescription = null,
-                tint = MarketGreen,
-                modifier = Modifier.size(14.dp)
-            )
-        }
     }
 }
 

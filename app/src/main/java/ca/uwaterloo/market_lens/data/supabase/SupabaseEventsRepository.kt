@@ -1,9 +1,11 @@
 package ca.uwaterloo.market_lens.data.supabase
 
 import android.util.Log
+import ca.uwaterloo.market_lens.domain.model.AiExplanation
 import ca.uwaterloo.market_lens.domain.model.EventCause
 import ca.uwaterloo.market_lens.domain.model.EventType
 import ca.uwaterloo.market_lens.domain.model.MarketEvent
+import ca.uwaterloo.market_lens.domain.model.Sentiment
 import ca.uwaterloo.market_lens.domain.repository.EventsRepository
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Order
@@ -62,6 +64,22 @@ class SupabaseEventsRepository : EventsRepository {
     } catch (e: Exception) {
         Log.e(TAG, "Error fetching event causes", e)
         emptyList()
+    }
+
+    override suspend fun getEventExplanation(eventId: String): AiExplanation? = try {
+        Log.d(TAG, "Fetching AI explanation from DB for eventId: $eventId")
+        client.from("ai_explanations")
+            .select {
+                filter {
+                    eq("event_id", eventId)
+                }
+                limit(1)
+            }
+            .decodeSingleOrNull<AiExplanationRow>()
+            ?.toDomain()
+    } catch (e: Exception) {
+        Log.e(TAG, "Error fetching AI explanation for $eventId", e)
+        null
     }
 }
 
