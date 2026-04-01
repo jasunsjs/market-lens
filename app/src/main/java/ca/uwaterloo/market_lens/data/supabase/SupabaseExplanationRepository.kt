@@ -27,8 +27,20 @@ class SupabaseExplanationRepository : ExplanationRepository {
         }
     }
 
-    override suspend fun getExplanation(eventId: String): AiExplanation =
-        client.from("ai_explanations")
+    override suspend fun getExplanation(eventId: String): AiExplanation {
+        val edgeResult = runCatching {
+            http.post("${BuildConfig.SUPABASE_URL}/functions/v1/generate-stock-analysis") {
+                header(HttpHeaders.Authorization, "Bearer ${BuildConfig.SUPABASE_ANON_KEY}")
+                contentType(ContentType.Application.Json)
+                setBody("""{"eventId":"$eventId"}""")
+            }.body<AiExplanationRow>()
+        }.getOrNull()
+
+        if (edgeResult != null) {
+            return edgeResult.toDomain()
+        }
+
+        return client.from("ai_explanations")
             .select {
                 filter {
                     eq("event_id", eventId)
@@ -44,10 +56,9 @@ class SupabaseExplanationRepository : ExplanationRepository {
                 sentiment = Sentiment.NEUTRAL,
                 confidence = 0.0
             )
+    }
 
     override suspend fun getStockAnalysis(tickerKey: String): StockAnalysis {
-        // Call the Edge Function - it returns a fresh (or newly generated) analysis.
-        // If the function fails for any reason, fall back to the most recent DB row.
         val edgeResult = runCatching {
             http.post("${BuildConfig.SUPABASE_URL}/functions/v1/generate-stock-analysis") {
                 header(HttpHeaders.Authorization, "Bearer ${BuildConfig.SUPABASE_ANON_KEY}")
@@ -96,7 +107,7 @@ private data class AiExplanationRow(
             eventId = eventId,
             summary = summary,
             bullets = bullets,
-            sentiment = Sentiment.valueOf(sentiment),
+            sentiment = try { Sentiment.valueOf(sentiment.uppercase()) } catch (e: Exception) { Sentiment.NEUTRAL },
             confidence = confidence
         )
 }
@@ -116,7 +127,7 @@ private data class StockAnalysisRow(
         StockAnalysis(
             tickerKey = tickerKey,
             summary = summary,
-            sentiment = Sentiment.valueOf(sentiment),
+            sentiment = try { Sentiment.valueOf(sentiment.uppercase()) } catch (e: Exception) { Sentiment.NEUTRAL },
             confidence = confidence
         )
 }
