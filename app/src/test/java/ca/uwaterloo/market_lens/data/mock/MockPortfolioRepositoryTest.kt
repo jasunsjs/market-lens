@@ -55,4 +55,34 @@ class MockPortfolioRepositoryTest {
 
         assertTrue(MockDb.portfolioPositions.none { it.tickerKey == tickerToRemove })
     }
+
+    @Test
+    fun updateShares_updates_shares_for_existing_ticker() = runBlocking {
+        val ticker = MockDb.portfolioPositions.first().tickerKey
+
+        repository.updateShares(ticker, 42.5, null)
+
+        val updated = MockDb.portfolioPositions.first { it.tickerKey == ticker }
+        assertEquals(42.5, updated.shares!!, 0.0)
+    }
+
+    @Test
+    fun updateShares_updates_avgCost_for_existing_ticker() = runBlocking {
+        val ticker = MockDb.portfolioPositions.first().tickerKey
+
+        repository.updateShares(ticker, 10.0, 150.25)
+
+        val updated = MockDb.portfolioPositions.first { it.tickerKey == ticker }
+        assertEquals(10.0, updated.shares!!, 0.0)
+        assertEquals(150.25, updated.avgCost!!, 0.0)
+    }
+
+    @Test
+    fun updateShares_does_nothing_for_unknown_ticker() = runBlocking {
+        val before = MockDb.portfolioPositions.toList()
+
+        repository.updateShares("UNKNOWN", 99.0, 100.0)
+
+        assertEquals(before, MockDb.portfolioPositions.toList())
+    }
 }

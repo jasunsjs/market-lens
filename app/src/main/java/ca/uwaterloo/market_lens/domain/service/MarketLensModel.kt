@@ -20,6 +20,7 @@ interface MarketLensModel {
     suspend fun getPortfolio(): Portfolio
     suspend fun addTickerToPortfolio(tickerKey: String)
     suspend fun removeTickerFromPortfolio(tickerKey: String)
+    suspend fun updateShares(tickerKey: String, shares: Double, avgCost: Double?)
 
     // Quotes for list + header
     suspend fun getQuote(tickerKey: String): StockQuote

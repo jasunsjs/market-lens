@@ -63,6 +63,10 @@ class MarketLensModelImpl(
         portfolioRepository.removeTicker(tickerKey)
     }
 
+    override suspend fun updateShares(tickerKey: String, shares: Double, avgCost: Double?) {
+        portfolioRepository.updateShares(tickerKey, shares, avgCost)
+    }
+
     override suspend fun getQuote(tickerKey: String): StockQuote =
         marketDataRepository.getQuote(tickerKey)
 

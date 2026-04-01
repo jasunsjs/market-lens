@@ -56,6 +56,19 @@ class SupabasePortfolioRepository : PortfolioRepository {
         }
     }
 
+    override suspend fun updateShares(tickerKey: String, shares: Double, avgCost: Double?) {
+        val portfolio = ensurePortfolioForCurrentUser()
+
+        client.from("portfolio_positions").update(
+            mapOf("weight" to shares, "avg_cost" to avgCost)
+        ) {
+            filter {
+                eq("portfolio_id", portfolio.id)
+                eq("ticker_key", tickerKey)
+            }
+        }
+    }
+
     private suspend fun ensurePortfolioForCurrentUser(): PortfolioRow {
         val userId = client.requireCurrentUserId()
 
@@ -110,13 +123,16 @@ private data class PortfolioPositionRow(
     @SerialName("ticker_key")
     val tickerKey: String,
     val weight: Double? = null,
+    @SerialName("avg_cost")
+    val avgCost: Double? = null,
     @SerialName("added_at")
     val addedAt: String? = null
 ) {
     fun toDomain(): PortfolioPosition =
         PortfolioPosition(
             tickerKey = tickerKey,
-            weight = weight
+            shares = weight,
+            avgCost = avgCost
         )
 }
 

@@ -21,4 +21,9 @@ class MockPortfolioRepository : PortfolioRepository {
     override suspend fun removeTicker(tickerKey: String) {
         MockDb.portfolioPositions.removeIf { it.tickerKey == tickerKey }
     }
+
+    override suspend fun updateShares(tickerKey: String, shares: Double, avgCost: Double?) {
+        val index = MockDb.portfolioPositions.indexOfFirst { it.tickerKey == tickerKey }
+        if (index >= 0) MockDb.portfolioPositions[index] = MockDb.portfolioPositions[index].copy(shares = shares, avgCost = avgCost)
+    }
 }

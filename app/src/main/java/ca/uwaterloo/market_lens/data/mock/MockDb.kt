@@ -78,9 +78,9 @@ object MockDb {
     }
 
     val portfolioPositions: MutableList<PortfolioPosition> = mutableListOf(
-        PortfolioPosition(tickerKey = "AAPL", weight = 30.0),
-        PortfolioPosition(tickerKey = "MSFT", weight = 50.0),
-        PortfolioPosition(tickerKey = "NVDA", weight = 20.0)
+        PortfolioPosition(tickerKey = "AAPL", shares = 30.0),
+        PortfolioPosition(tickerKey = "MSFT", shares = 50.0),
+        PortfolioPosition(tickerKey = "NVDA", shares = 20.0)
     )
 
     val newsItems: MutableList<NewsItem> = mutableListOf(
