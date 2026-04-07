@@ -10,3 +10,6 @@
 local.properties
 secrets.properties
 /secrets.properties
+/app/release
+*.apk
+*.jks
