@@ -14,7 +14,7 @@ Video Walkthrough: https://youtu.be/So7LqXK0Z_A
 
 ## Getting Started
 
-**Note that MarketLen is only supported on Android mobile.**
+**Note that MarketLens is only supported on Android mobile.**
 
 1. Checkout the [latest release](https://github.com/jasunsjs/market-lens/releases/tag/v1.0.0) & download the APK file
 2. Choose any Android emulator (you can use Android Studio)
@@ -22,7 +22,19 @@ Video Walkthrough: https://youtu.be/So7LqXK0Z_A
 
 Alternatively, if you would like to clone the repository, you would need to build it and use [Android Studio](https://developer.android.com/studio) to build using Gradle and launch the app through the emulator.
 
-## Tools/APIs used
+## Techstack
+
+### Tools
+
+The entire project is based on Kotlin.
+
+- Frontend: Jetpack Compose
+- Database: PostgreSQL on Supabase
+- Backend function service: Supabase Edge Functions
+- Design: MVVM + Layered Architecture
+
+### APIs
+
 - [Finnhub API](https://finnhub.io/): current stock data
 - [Massive API](https://massive.com/): past stock data
 - [Google Gemini API](https://ai.google.dev/gemini-api/docs): AI analyses
@@ -32,7 +44,6 @@ Alternatively, if you would like to clone the repository, you would need to buil
 
 - [Diagrams](https://github.com/jasunsjs/market-lens/wiki/Diagrams): ERD Diagram (database schema), UML Class Diagrams, and Layered Architecture
 - [API and Database Reference](https://github.com/jasunsjs/market-lens/wiki/API-and-Database-Reference): complete reference page of our table design and API methods
-
 
 ## API Rate Limits
 
