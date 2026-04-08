@@ -16,7 +16,7 @@ Video Walkthrough: https://youtu.be/So7LqXK0Z_A
 
 **Note that MarketLens is only supported on Android mobile.**
 
-1. Checkout the [latest release](https://github.com/jasunsjs/market-lens/releases/tag/v1.0.0) & download the APK file
+1. Checkout the [release](https://github.com/jasunsjs/market-lens/releases/tag/v1.0.0) & download the APK file
 2. Choose any Android emulator (you can use Android Studio)
 3. Drag the APK file into your emulator and launch MarketLens
 
